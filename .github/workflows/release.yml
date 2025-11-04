@@ -1,0 +1,81 @@
+name: Create Theme Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Update version in style.css
+      run: |
+        sed -i "s/Version: .*/Version: ${{ steps.get_version.outputs.VERSION }}/" style.css
+        
+    - name: Update version in functions.php
+      run: |
+        sed -i "s/define('EPORTFOLIO_VERSION', '.*');/define('EPORTFOLIO_VERSION', '${{ steps.get_version.outputs.VERSION }}');/" functions.php
+        
+    - name: Create theme zip
+      run: |
+        zip -r eportfolio-theme.zip . -x "*.git*" "*.github*" "node_modules/*" "*.DS_Store*" "updates.json"
+        
+    - name: Update updates.json
+      run: |
+        cat > updates.json << EOF
+        {
+          "version": "${{ steps.get_version.outputs.VERSION }}",
+          "details_url": "https://github.com/${{ github.repository }}",
+          "download_url": "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.VERSION }}/eportfolio-theme.zip"
+        }
+        EOF
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: |
+          Release ${{ steps.get_version.outputs.VERSION }}
+          
+          ## Installation
+          1. Download the eportfolio-theme.zip file
+          2. Upload it to WordPress Admin > Appearance > Themes > Add New > Upload Theme
+          3. Activate the theme
+          
+          ## Changes
+          See commit history for detailed changes.
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./eportfolio-theme.zip
+        asset_name: eportfolio-theme.zip
+        asset_content_type: application/zip
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: .
+        keep_files: true
+        publish_branch: gh-pages
+        allow_empty_commit: false
+        exclude_assets: '.github,*.zip,*.git*'

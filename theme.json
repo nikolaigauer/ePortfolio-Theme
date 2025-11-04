@@ -1,0 +1,125 @@
+{
+    "$schema": "https://schemas.wp.org/wp/6.8/theme.json",
+    "version": 3,
+    "settings": {
+        "typography": {
+            "fontFamilies": [{
+                "fontFamily": "Roboto, sans-serif",
+                "name": "Roboto",
+                "slug": "roboto",
+                "fontFace": [{
+                        "fontFamily": "Roboto",
+                        "fontStyle": "normal",
+                        "fontWeight": "100",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOkCnqEu92Fr1MmgVxFIzIXKMny.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "normal",
+                        "fontWeight": "300",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmSU5fBBc4AMP6lbBP.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "normal",
+                        "fontWeight": "400",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "normal",
+                        "fontWeight": "500",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fBBc4AMP6lbBP.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "normal",
+                        "fontWeight": "700",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lbBP.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "normal",
+                        "fontWeight": "900",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmYUtfBBc4AMP6lbBP.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "italic",
+                        "fontWeight": "100",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOiCnqEu92Fr1Mu51QrEzAdLwnYlg.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "italic",
+                        "fontWeight": "300",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51TjASc6CsTYl4BOQ3o.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "italic",
+                        "fontWeight": "400",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOkCnqEu92Fr1Mu51xIIzIXKMnyrYk.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "italic",
+                        "fontWeight": "500",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51S7ACc6CsTYl4BOQ3o.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "italic",
+                        "fontWeight": "700",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51TzBhc6CsTYl4BOQ3o.woff2"]
+                    },
+                    {
+                        "fontFamily": "Roboto",
+                        "fontStyle": "italic",
+                        "fontWeight": "900",
+                        "fontDisplay": "swap",
+                        "src": ["https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51TLBBc6CsTYl4BOQ3o.woff2"]
+                    }
+                ]
+            }]
+        }
+    },
+    "styles": {
+        "typography": {
+            "fontFamily": "var(--wp--preset--font-family--roboto)",
+            "fontSize": "var(--wp--preset--font-size--medium)",
+            "fontWeight": "400",
+            "fontStyle": "normal"
+        },
+        "elements": {
+            "heading": {
+                "typography": {
+                    "fontFamily": "var(--wp--preset--font-family--roboto)",
+                    "fontWeight": "700",
+                    "fontStyle": "normal"
+                }
+            },
+            "link": {
+                "typography": {
+                    "fontFamily": "var(--wp--preset--font-family--roboto)"
+                }
+            },
+            "caption": {
+                "typography": {
+                    "fontFamily": "var(--wp--preset--font-family--roboto)"
+                }
+            }
+        }
+    }
+}
