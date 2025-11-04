@@ -13,7 +13,7 @@ A WordPress theme for student portfolio management with granular privacy control
 ## Installation
 
 ### Manual Installation
-1. Download the latest release from [GitHub Releases](https://github.com/your-github-username/eportfolio-theme/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/nikolaigauer/ePortfolio-Theme/releases)
 2. Upload the zip file to WordPress Admin > Appearance > Themes > Add New > Upload Theme
 3. Activate the theme
 

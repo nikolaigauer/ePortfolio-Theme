@@ -21,8 +21,8 @@ class EPortfolio_Theme_Updater {
     public function __construct() {
         $this->theme_slug = get_option('stylesheet');
         $this->version = EPORTFOLIO_VERSION;
-        $this->github_username = 'your-github-username'; // Update this with your GitHub username
-        $this->github_repo = 'eportfolio-theme'; // Update this with your repo name
+        $this->github_username = 'nikolaigauer';
+        $this->github_repo = 'ePortfolio-Theme';
         $this->update_path = "https://{$this->github_username}.github.io/{$this->github_repo}/updates.json";
         
         add_filter('pre_set_site_transient_update_themes', array($this, 'check_for_update'));
