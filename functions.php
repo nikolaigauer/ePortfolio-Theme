@@ -15,6 +15,12 @@ define('EPORTFOLIO_VERSION', '1.0.2');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
+// ⭐ Load the theme updater IMMEDIATELY (before other modules)
+$updater_file = EPORTFOLIO_DIR . '/inc/theme-updater.php';
+if (file_exists($updater_file)) {
+    require_once $updater_file;
+}
+
 /**
  * Load functionality modules
  */
@@ -28,7 +34,7 @@ function eportfolio_load_modules() {
         'content-type-filter',    // Content type filter menu
         'template-filters',       // Template overrides and filters
         'shortcodes',             // Dynamic shortcodes for templates
-        'theme-updater',          // GitHub-based theme updates
+        // 'theme-updater' removed - loaded above immediately
     );
     
     foreach ($modules as $module) {

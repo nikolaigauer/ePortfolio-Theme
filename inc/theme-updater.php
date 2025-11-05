@@ -19,15 +19,25 @@ class EPortfolio_Theme_Updater {
     private $update_path;
     
     public function __construct() {
-        $this->theme_slug = get_option('stylesheet');
+        // Use the directory name as the slug (more reliable)
+        $theme = wp_get_theme();
+        $this->theme_slug = $theme->get_stylesheet();
         $this->version = EPORTFOLIO_VERSION;
         $this->github_username = 'nikolaigauer';
         $this->github_repo = 'ePortfolio-Theme';
         $this->update_path = "https://{$this->github_username}.github.io/{$this->github_repo}/updates.json";
         
+        // Standard hooks
         add_filter('pre_set_site_transient_update_themes', array($this, 'check_for_update'));
+        
+        // Additional multisite hooks
+        add_filter('site_transient_update_themes', array($this, 'check_for_update'));
+        
         add_filter('upgrader_pre_download', array($this, 'download_package'), 10, 3);
         add_action('admin_notices', array($this, 'update_notice'));
+        
+        // Network admin notices for multisite
+        add_action('network_admin_notices', array($this, 'update_notice'));
     }
     
     /**
@@ -38,16 +48,31 @@ class EPortfolio_Theme_Updater {
             return $transient;
         }
         
+        // Debug logging (you can remove this later)
+        error_log('ePortfolio Updater: Checking for updates. Current version: ' . $this->version);
+        error_log('ePortfolio Updater: Theme slug: ' . $this->theme_slug);
+        error_log('ePortfolio Updater: Update path: ' . $this->update_path);
+        
         // Get remote version info
         $remote_version = $this->get_remote_version();
         
-        if (version_compare($this->version, $remote_version['version'], '<')) {
-            $transient->response[$this->theme_slug] = array(
-                'theme' => $this->theme_slug,
-                'new_version' => $remote_version['version'],
-                'url' => $remote_version['details_url'],
-                'package' => $remote_version['download_url']
-            );
+        if ($remote_version && isset($remote_version['version'])) {
+            error_log('ePortfolio Updater: Remote version found: ' . $remote_version['version']);
+            
+            if (version_compare($this->version, $remote_version['version'], '<')) {
+                error_log('ePortfolio Updater: Update available! Adding to transient.');
+                
+                $transient->response[$this->theme_slug] = array(
+                    'theme' => $this->theme_slug,
+                    'new_version' => $remote_version['version'],
+                    'url' => $remote_version['details_url'],
+                    'package' => $remote_version['download_url']
+                );
+            } else {
+                error_log('ePortfolio Updater: Already on latest version.');
+            }
+        } else {
+            error_log('ePortfolio Updater: Could not fetch remote version info.');
         }
         
         return $transient;
@@ -57,10 +82,25 @@ class EPortfolio_Theme_Updater {
      * Get remote version information
      */
     private function get_remote_version() {
-        $request = wp_remote_get($this->update_path);
+        $request = wp_remote_get($this->update_path, array(
+            'timeout' => 10,
+            'headers' => array(
+                'Accept' => 'application/json'
+            )
+        ));
         
-        if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
+        if (is_wp_error($request)) {
+            error_log('ePortfolio Updater Error: ' . $request->get_error_message());
+            return false;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($request);
+        error_log('ePortfolio Updater: Response code: ' . $response_code);
+        
+        if ($response_code === 200) {
             $body = wp_remote_retrieve_body($request);
+            error_log('ePortfolio Updater: Response body: ' . $body);
+            
             $data = json_decode($body, true);
             
             if ($data && isset($data['version'])) {
@@ -79,16 +119,16 @@ class EPortfolio_Theme_Updater {
             strpos($package, $this->github_repo) !== false) {
             
             $args = array(
+                'timeout' => 300,
                 'headers' => array(
                     'Accept' => 'application/vnd.github.v3+json',
                     'User-Agent' => 'WordPress Theme Updater'
                 )
             );
             
-            $request = wp_remote_get($package, $args);
+            $temp_file = download_url($package, 300);
             
-            if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
-                $temp_file = download_url($package);
+            if (!is_wp_error($temp_file)) {
                 return $temp_file;
             }
         }
@@ -101,7 +141,13 @@ class EPortfolio_Theme_Updater {
      */
     public function update_notice() {
         $screen = get_current_screen();
-        if ($screen->id === 'themes' && !get_user_meta(get_current_user_id(), 'eportfolio_update_notice_dismissed', true)) {
+        
+        // Support both single-site and network admin
+        $valid_screens = array('themes', 'themes-network');
+        
+        if (in_array($screen->id, $valid_screens) && 
+            !get_user_meta(get_current_user_id(), 'eportfolio_update_notice_dismissed', true)) {
+            
             echo '<div class="notice notice-info is-dismissible" id="eportfolio-update-notice">';
             echo '<p><strong>ePortfolio Theme:</strong> This theme receives automatic updates from GitHub. ';
             echo 'You\'ll be notified here when updates are available. ';
@@ -115,7 +161,7 @@ class EPortfolio_Theme_Updater {
 
 // Handle notice dismissal
 add_action('wp_ajax_dismiss_eportfolio_notice', function() {
-    if (wp_verify_nonce($_POST['nonce'], 'dismiss_notice')) {
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'dismiss_notice')) {
         update_user_meta(get_current_user_id(), 'eportfolio_update_notice_dismissed', true);
     }
     wp_die();
