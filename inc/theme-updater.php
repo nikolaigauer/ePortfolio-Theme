@@ -27,6 +27,7 @@ class EPortfolio_Theme_Updater {
         
         add_filter('pre_set_site_transient_update_themes', array($this, 'check_for_update'));
         add_filter('upgrader_pre_download', array($this, 'download_package'), 10, 3);
+        add_action('admin_notices', array($this, 'update_notice'));
     }
     
     /**
@@ -94,7 +95,31 @@ class EPortfolio_Theme_Updater {
         
         return $reply;
     }
+    
+    /**
+     * Show admin notice about auto-update system
+     */
+    public function update_notice() {
+        $screen = get_current_screen();
+        if ($screen->id === 'themes' && !get_user_meta(get_current_user_id(), 'eportfolio_update_notice_dismissed', true)) {
+            echo '<div class="notice notice-info is-dismissible" id="eportfolio-update-notice">';
+            echo '<p><strong>ePortfolio Theme:</strong> This theme receives automatic updates from GitHub. ';
+            echo 'You\'ll be notified here when updates are available. ';
+            echo '<a href="https://github.com/nikolaigauer/ePortfolio-Theme" target="_blank">View on GitHub</a></p>';
+            echo '<script>jQuery(document).on("click", "#eportfolio-update-notice .notice-dismiss", function(){ ';
+            echo 'jQuery.post(ajaxurl, {action: "dismiss_eportfolio_notice", nonce: "' . wp_create_nonce('dismiss_notice') . '"}); });</script>';
+            echo '</div>';
+        }
+    }
 }
+
+// Handle notice dismissal
+add_action('wp_ajax_dismiss_eportfolio_notice', function() {
+    if (wp_verify_nonce($_POST['nonce'], 'dismiss_notice')) {
+        update_user_meta(get_current_user_id(), 'eportfolio_update_notice_dismissed', true);
+    }
+    wp_die();
+});
 
 // Initialize the updater
 new EPortfolio_Theme_Updater();
