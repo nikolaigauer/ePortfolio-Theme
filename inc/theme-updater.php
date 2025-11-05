@@ -48,31 +48,18 @@ class EPortfolio_Theme_Updater {
             return $transient;
         }
         
-        // Debug logging (you can remove this later)
-        error_log('ePortfolio Updater: Checking for updates. Current version: ' . $this->version);
-        error_log('ePortfolio Updater: Theme slug: ' . $this->theme_slug);
-        error_log('ePortfolio Updater: Update path: ' . $this->update_path);
-        
         // Get remote version info
         $remote_version = $this->get_remote_version();
         
         if ($remote_version && isset($remote_version['version'])) {
-            error_log('ePortfolio Updater: Remote version found: ' . $remote_version['version']);
-            
             if (version_compare($this->version, $remote_version['version'], '<')) {
-                error_log('ePortfolio Updater: Update available! Adding to transient.');
-                
                 $transient->response[$this->theme_slug] = array(
                     'theme' => $this->theme_slug,
                     'new_version' => $remote_version['version'],
                     'url' => $remote_version['details_url'],
                     'package' => $remote_version['download_url']
                 );
-            } else {
-                error_log('ePortfolio Updater: Already on latest version.');
             }
-        } else {
-            error_log('ePortfolio Updater: Could not fetch remote version info.');
         }
         
         return $transient;
@@ -90,17 +77,13 @@ class EPortfolio_Theme_Updater {
         ));
         
         if (is_wp_error($request)) {
-            error_log('ePortfolio Updater Error: ' . $request->get_error_message());
             return false;
         }
         
         $response_code = wp_remote_retrieve_response_code($request);
-        error_log('ePortfolio Updater: Response code: ' . $response_code);
         
         if ($response_code === 200) {
             $body = wp_remote_retrieve_body($request);
-            error_log('ePortfolio Updater: Response body: ' . $body);
-            
             $data = json_decode($body, true);
             
             if ($data && isset($data['version'])) {
