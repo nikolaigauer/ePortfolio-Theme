@@ -41,12 +41,10 @@ jobs:
         
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        tag_name: v${{ steps.get_version.outputs.VERSION }}
+        name: Release ${{ steps.get_version.outputs.VERSION }}
         body: |
           Release ${{ steps.get_version.outputs.VERSION }}
           
@@ -57,18 +55,9 @@ jobs:
           
           ## Changes
           See commit history for detailed changes.
+        files: ./eportfolio-theme.zip
         draft: false
         prerelease: false
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./eportfolio-theme.zip
-        asset_name: eportfolio-theme.zip
-        asset_content_type: application/zip
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
