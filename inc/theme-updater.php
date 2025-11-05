@@ -143,10 +143,17 @@ class EPortfolio_Theme_Updater {
             return $transient;
         }
         
+        // DEBUG: Log what's happening
+        error_log("MULTISITE UPDATE CHECK: Current version: {$this->version}, Theme slug: {$this->theme_slug}");
+        
         // Get remote version info
         $remote_version = $this->get_remote_version();
         
+        error_log("MULTISITE UPDATE CHECK: Remote version data: " . print_r($remote_version, true));
+        
         if ($remote_version && isset($remote_version['version'])) {
+            error_log("MULTISITE UPDATE CHECK: Comparing {$this->version} < {$remote_version['version']}");
+            
             if (version_compare($this->version, $remote_version['version'], '<')) {
                 // Ensure response array exists
                 if (!isset($transient->response)) {
@@ -159,7 +166,13 @@ class EPortfolio_Theme_Updater {
                     'url' => $remote_version['details_url'],
                     'package' => $remote_version['download_url']
                 );
+                
+                error_log("MULTISITE UPDATE CHECK: Update added to transient!");
+            } else {
+                error_log("MULTISITE UPDATE CHECK: No update needed");
             }
+        } else {
+            error_log("MULTISITE UPDATE CHECK: Failed to get remote version");
         }
         
         return $transient;
