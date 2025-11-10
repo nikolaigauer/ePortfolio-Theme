@@ -53,6 +53,17 @@ function cohort_theme_privacy_control() {
             }
         }
         
+        // Check if we're on a page and if it's explicitly marked as private
+        if (is_page()) {
+            $page_id = get_the_ID();
+            $page_is_public = get_post_meta($page_id, '_is_public_portfolio', true);
+            
+            // If page is explicitly marked as private (value is '0'), block it
+            if ($page_is_public === '0') {
+                auth_redirect();
+            }
+        }
+        
         // Otherwise, allow access (site is public)
         return;
     }
@@ -92,6 +103,18 @@ function cohort_theme_privacy_control() {
         // Allow if post is explicitly marked public OR if entire portfolio is public
         if ($post_is_public === '1' || $portfolio_is_public === '1') {
             return; // Allow access to this post
+        }
+    }
+    
+    // Allow individual pages with granular control
+    // A page can be public if it's explicitly marked as public
+    if (is_page()) {
+        $page_id = get_the_ID();
+        $page_is_public = get_post_meta($page_id, '_is_public_portfolio', true);
+        
+        // Allow if page is explicitly marked public
+        if ($page_is_public === '1') {
+            return; // Allow access to this page
         }
     }
     
