@@ -2,7 +2,7 @@
 
 A WordPress theme for student portfolio management with granular privacy controls, dynamic content type filtering, and dual archive/portfolio views.
 
-**Latest Update**: v1.0.7 - Testing multisite update notifications and pipeline
+**Latest Update**: v1.0.8 - Remove hardcoded content types and cleanup debug code
 
 ## Features
 
