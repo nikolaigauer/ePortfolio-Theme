@@ -42,39 +42,7 @@ function eportfolio_register_content_type_taxonomy() {
     register_taxonomy('content_type', array('post'), $args);
 }
 
-/**
- * Add some default content types on theme activation
- * Only runs once when theme is first activated
- */
-add_action('after_switch_theme', 'eportfolio_add_default_content_types');
-function eportfolio_add_default_content_types() {
-    // Check if we've already added defaults
-    if (get_option('eportfolio_content_types_added')) {
-        return;
-    }
-    
-    // Default content types for educational portfolios
-    $default_types = array(
-        'Essay' => 'Formal written essays and papers',
-        'Reflection' => 'Reflective writing and self-assessment',
-        'Studio Work' => 'Creative and studio projects',
-        'In-Progress' => 'Work in development',
-        'Research' => 'Research projects and findings',
-    );
-    
-    foreach ($default_types as $name => $description) {
-        if (!term_exists($name, 'content_type')) {
-            wp_insert_term(
-                $name,
-                'content_type',
-                array('description' => $description)
-            );
-        }
-    }
-    
-    // Mark that we've added defaults
-    update_option('eportfolio_content_types_added', true);
-}
+
 
 /**
  * Add content type filter to post list in admin
