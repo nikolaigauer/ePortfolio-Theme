@@ -296,21 +296,20 @@ function eportfolio_author_archive_link_shortcode($atts) {
 
 /**
  * Shortcode: [cohort_link]
- * Returns a link back to the main cohort/home page
- * This is what you'll use to replace the hardcoded URLs
+ * Returns a link back to the main home page
  * 
- * Usage: [cohort_link text="Cohort page"]
+ * Usage: [cohort_link text="Back"]
  */
 add_shortcode('cohort_link', 'eportfolio_cohort_link_shortcode');
 function eportfolio_cohort_link_shortcode($atts) {
     $atts = shortcode_atts(array(
-        'text' => 'Cohort page',
+        'text' => 'Back',
         'arrow' => 'true',
     ), $atts);
     
     $arrow = ($atts['arrow'] === 'true') ? '⏎ ' : '';
     
-    // Check if there's a custom cohort URL set in options
+    // Check if there's a custom URL set in options
     $cohort_url = get_option('eportfolio_cohort_url', home_url('/'));
     
     return sprintf(

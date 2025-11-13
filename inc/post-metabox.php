@@ -61,23 +61,21 @@ function eportfolio_render_portfolio_metabox($post) {
         </label>
         
         <?php if ($post->post_type === 'post'): ?>
-        <p class="description" style="margin: 10px 0 0 0; line-height: 1.5; color: #646970;">
-            <strong>Two ways this affects visibility:</strong><br>
-            1. Appears on your <code style="background: #f0f0f1; padding: 2px 6px; border-radius: 3px;">/portfolio/your-name</code> page<br>
-            2. Makes this specific post publicly shareable via its own URL, even if your portfolio is private
+        <p class="description" style="margin: 8px 0 0 0; font-size: 12px; color: #646970;">
+            Shows on <code>/portfolio/username</code> + makes post publicly shareable
         </p>
         <?php endif; ?>
         
         <?php if ($is_portfolio_post === '1'): ?>
         <div style="background: #d5f4e6; border-left: 4px solid #00a32a; padding: 10px; margin-top: 12px;">
-            <p style="margin: 0; color: #007017; font-size: 13px;">
-                ✓ <strong>Portfolio post</strong> - This will appear in your curated portfolio
+            <p style="margin: 0; color: #007017; font-size: 12px;">
+                ✓ <strong>Portfolio post</strong>
             </p>
         </div>
         <?php else: ?>
         <div style="background: #f0f0f1; border-left: 4px solid #646970; padding: 10px; margin-top: 12px;">
-            <p style="margin: 0; color: #1e1e1e; font-size: 13px;">
-                ℹ <strong>Regular post</strong> - Only visible in your main author archive
+            <p style="margin: 0; color: #1e1e1e; font-size: 12px;">
+                ℹ <strong>Regular post</strong>
             </p>
         </div>
         <?php endif; ?>
@@ -111,22 +109,20 @@ function eportfolio_render_privacy_metabox($post) {
             </span>
         </label>
         
-        <p class="description" style="margin: 10px 0 0 0; line-height: 1.5; color: #646970;">
-            <strong>Page Privacy Override:</strong><br>
-            When checked, this page will be accessible to the public even if the site is set to private. 
-            Perfect for landing pages, contact info, or other pages that should be publicly viewable.
+        <p class="description" style="margin: 8px 0 0 0; font-size: 12px; color: #646970;">
+            Override site privacy - makes page publicly accessible
         </p>
         
         <?php if ($is_public_page === '1'): ?>
         <div style="background: #d5f4e6; border-left: 4px solid #00a32a; padding: 10px; margin-top: 12px;">
-            <p style="margin: 0; color: #007017; font-size: 13px;">
-                ✓ <strong>Public page</strong> - This page will be accessible without login
+            <p style="margin: 0; color: #007017; font-size: 12px;">
+                ✓ <strong>Public page</strong>
             </p>
         </div>
         <?php else: ?>
         <div style="background: #f0f0f1; border-left: 4px solid #646970; padding: 10px; margin-top: 12px;">
-            <p style="margin: 0; color: #1e1e1e; font-size: 13px;">
-                🔒 <strong>Private page</strong> - Follows site privacy settings
+            <p style="margin: 0; color: #1e1e1e; font-size: 12px;">
+                🔒 <strong>Private page</strong>
             </p>
         </div>
         <?php endif; ?>
