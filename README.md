@@ -1,8 +1,8 @@
-# ePortfolio Theme v2.0.0
+# ePortfolio Theme v2.0.1
 
 A WordPress theme for student portfolio management with granular privacy controls, dynamic content type filtering, and flexible page templates. Perfect for academic institutions, student cohorts, and creative portfolios.
 
-**Latest Update**: v2.0.0 - Enhanced admin interface, page privacy controls, improved menu generation, and streamlined UX
+**Latest Update**: v2.0.1 - Removed auto-updater, fixed theme URIs, manual updates only
 
 ## ✨ Features
 
@@ -105,8 +105,8 @@ The theme includes content type taxonomy:
 1. Fork or clone the repository
 2. Make your changes  
 3. Update version in `style.css` and `functions.php`
-4. Create a git tag: `git tag v2.0.1`
-5. Push the tag: `git push origin v2.0.1` 
+4. Create a git tag: `git tag v2.0.2`
+5. Push the tag: `git push origin v2.0.2` 
 6. GitHub Actions will automatically create a release
 
 ## Requirements

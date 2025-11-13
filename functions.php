@@ -11,15 +11,11 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('EPORTFOLIO_VERSION', '2.0.0');
+define('EPORTFOLIO_VERSION', '2.0.1');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
-// ⭐ Load the theme updater IMMEDIATELY (before other modules)
-$updater_file = EPORTFOLIO_DIR . '/inc/theme-updater.php';
-if (file_exists($updater_file)) {
-    require_once $updater_file;
-}
+// Auto-updater removed - manual updates only
 
 /**
  * Load functionality modules
