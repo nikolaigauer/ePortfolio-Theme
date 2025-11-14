@@ -320,10 +320,28 @@ function eportfolio_render_settings_page() {
                             <strong><?php echo count($authors); ?> students</strong> with Author role:
                         </p>
                         
-                        <div style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 8px; border-radius: 3px; font-size: 10px;">
-                            <?php foreach ($authors as $author): ?>
-                            <div style="margin-bottom: 2px; padding: 2px;">
-                                <?php echo esc_html($author->display_name); ?>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 3px;">
+                            <?php foreach ($authors as $author): 
+                                $author_url = str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($author->ID));
+                                $post_count = count_user_posts($author->ID, 'post', true);
+                            ?>
+                            <div style="padding: 8px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                                <div>
+                                    <strong><?php echo esc_html($author->display_name); ?></strong>
+                                    <br><small style="color: #666;"><?php echo $post_count; ?> posts</small>
+                                </div>
+                                <div style="text-align: right;">
+                                    <a href="<?php echo esc_url($author_url); ?>" target="_blank" 
+                                       style="font-family: monospace; color: #0073aa; text-decoration: none; font-size: 9px; display: block;"
+                                       title="<?php echo esc_attr($author_url); ?>">
+                                        /<?php echo $current_author_slug; ?>/<?php echo esc_html($author->user_nicename); ?>
+                                    </a>
+                                    <button type="button" class="button button-small" 
+                                            onclick="navigator.clipboard.writeText('<?php echo esc_js($author_url); ?>'); this.innerText='✓'; setTimeout(() => this.innerText='Copy', 1500);" 
+                                            style="margin-top: 2px; font-size: 9px; padding: 2px 6px;">
+                                        Copy
+                                    </button>
+                                </div>
                             </div>
                             <?php endforeach; ?>
                         </div>
