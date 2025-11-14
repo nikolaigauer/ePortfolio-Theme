@@ -69,6 +69,15 @@ function eportfolio_render_settings_page() {
         }
     }
     
+    // Handle student navigation menu generation (admin only)
+    if ($is_admin && isset($_POST['create_student_menu']) && check_admin_referer('student_menu_action', 'student_menu_nonce')) {
+        $result = eportfolio_create_student_author_menu();
+        if ($result) {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Student navigation menu created/updated!</strong> You can now add it to your templates via the Navigation block.</p></div>';
+        } else {
+            echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> Could not create student menu. Please try again.</p></div>';
+        }
+    }
     
     // Handle personal portfolio form submission
     if (isset($_POST['save_portfolio_toggle']) && check_admin_referer('portfolio_toggle_action', 'portfolio_toggle_nonce')) {
@@ -225,7 +234,7 @@ function eportfolio_render_settings_page() {
         <!-- Menu Builder Guide Tab -->
         <?php if ($active_tab === 'menu-builder'): ?>
         <div class="eportfolio-tab-content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1400px;">
                 
                 <!-- ACF Integration (Left) -->
                 <div class="card" style="background: #f0f6fc; border-left: 4px solid #2271b1;">
@@ -267,7 +276,65 @@ function eportfolio_render_settings_page() {
                     </div>
                 </div>
                 
-                <!-- Portfolio Links & Student URLs (Right) -->
+                <!-- Student Menu Generator (Middle) -->
+                <div class="card" style="background: #fff7e6; border-left: 4px solid #fa8c16;">
+                    <h2 style="margin-top: 0;">👥 Student Menu Generator</h2>
+                    
+                    <p class="description" style="margin-bottom: 15px; font-size: 12px;">
+                        Quick utility: Generate a "Student Authors" menu with all student links
+                    </p>
+                    
+                    <form method="post">
+                        <?php wp_nonce_field('student_menu_action', 'student_menu_nonce'); ?>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 10px 0; color: #fa8c16;">Quick Setup</h4>
+                            <p style="margin: 5px 0; font-size: 12px;">
+                                Creates a flat menu called "Student Authors" with links to all author pages.
+                            </p>
+                            
+                            <p style="margin-top: 15px;">
+                                <input type="submit" name="create_student_menu" class="button button-primary button-large" value="Generate Student Menu" />
+                            </p>
+                            
+                            <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">
+                                <strong>Note:</strong> Creates a flat menu. Organize and style manually after generation.
+                            </p>
+                        </div>
+                    </form>
+                    
+                    <?php 
+                    $current_author_slug = get_option('eportfolio_author_slug', 'author');
+                    $authors = get_users(array(
+                        'role' => 'author',
+                        'blog_id' => get_current_blog_id(),
+                        'orderby' => 'display_name'
+                    ));
+                    ?>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 4px;">
+                        <h4 style="margin: 0 0 10px 0; color: #fa8c16;">Current Students</h4>
+                        
+                        <?php if (!empty($authors)): ?>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            <strong><?php echo count($authors); ?> students</strong> with Author role:
+                        </p>
+                        
+                        <div style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 8px; border-radius: 3px; font-size: 10px;">
+                            <?php foreach ($authors as $author): ?>
+                            <div style="margin-bottom: 2px; padding: 2px;">
+                                <?php echo esc_html($author->display_name); ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <?php else: ?>
+                        <p style="color: #d63638; font-style: italic; font-size: 12px;">No users with Author role found.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- Portfolio Links & Manual URLs (Right) -->
                 <div class="card" style="background: #f6ffed; border-left: 4px solid #52c41a;">
                     <h2 style="margin-top: 0;">🔗 Navigation & Links</h2>
                     
@@ -287,33 +354,17 @@ function eportfolio_render_settings_page() {
                     </div>
                     
                     <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Student Directory</h4>
-                        <?php 
-                        $current_author_slug = get_option('eportfolio_author_slug', 'author');
-                        $authors = get_users(array(
-                            'role' => 'author',
-                            'blog_id' => get_current_blog_id(),
-                            'orderby' => 'display_name'
-                        ));
-                        ?>
-                        
-                        <?php if (!empty($authors)): ?>
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Student URLs</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
-                            <strong><?php echo count($authors); ?> students</strong> - Use these URLs for manual links:
+                            <strong>URL Pattern:</strong>
                         </p>
-                        <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 10px;">
-                            <?php foreach ($authors as $author): 
-                                $author_url = str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($author->ID));
-                            ?>
-                            <div style="margin-bottom: 3px;">
-                                <strong><?php echo esc_html($author->display_name); ?></strong><br>
-                                <?php echo esc_html($author_url); ?>
-                            </div>
-                            <?php endforeach; ?>
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 11px;">
+                            <?php echo esc_html(home_url('/' . $current_author_slug . '/username')); ?>
                         </div>
-                        <?php else: ?>
-                        <p style="color: #d63638; font-style: italic; font-size: 12px;">No users with Author role found.</p>
-                        <?php endif; ?>
+                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">
+                            Replace "username" with actual student usernames for manual links.
+                            Or use the Student Menu Generator to create all links automatically.
+                        </p>
                     </div>
                     
                     <div style="background: white; padding: 15px; border-radius: 4px;">
@@ -393,6 +444,51 @@ function eportfolio_render_settings_page() {
     <?php
 }
 
+/**
+ * Create student author navigation menu
+ * Generates a flat menu with all authors (no auto-grouping)
+ */
+function eportfolio_create_student_author_menu() {
+    // Delete existing student menu if it exists
+    $existing_menu = wp_get_nav_menu_object('Student Authors');
+    if ($existing_menu) {
+        wp_delete_nav_menu($existing_menu->term_id);
+    }
+    
+    // Create new menu
+    $menu_id = wp_create_nav_menu('Student Authors');
+    
+    if (is_wp_error($menu_id)) {
+        return false;
+    }
+    
+    // Get all authors
+    $authors = get_users(array(
+        'role' => 'author',
+        'blog_id' => get_current_blog_id(),
+        'orderby' => 'display_name'
+    ));
+    
+    if (empty($authors)) {
+        return false;
+    }
+    
+    // Get custom author slug
+    $author_slug = get_option('eportfolio_author_slug', 'author');
+    
+    // Add all authors as flat menu items
+    foreach ($authors as $author) {
+        $author_url = str_replace('/author/', '/' . $author_slug . '/', get_author_posts_url($author->ID));
+        
+        wp_update_nav_menu_item($menu_id, 0, array(
+            'menu-item-title' => $author->display_name,
+            'menu-item-url' => $author_url,
+            'menu-item-status' => 'publish'
+        ));
+    }
+    
+    return true;
+}
 
 /**
  * Customize author archive rewrite rules to use custom slug
