@@ -69,15 +69,6 @@ function eportfolio_render_settings_page() {
         }
     }
     
-    // Handle student navigation menu generation (admin only)
-    if ($is_admin && isset($_POST['create_student_menu']) && check_admin_referer('student_menu_action', 'student_menu_nonce')) {
-        $result = eportfolio_create_student_author_menu();
-        if ($result) {
-            echo '<div class="notice notice-success is-dismissible"><p><strong>Student navigation menu created/updated!</strong> You can now add it to your templates via the Navigation block.</p></div>';
-        } else {
-            echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> Could not create student menu. Please try again.</p></div>';
-        }
-    }
     
     // Handle personal portfolio form submission
     if (isset($_POST['save_portfolio_toggle']) && check_admin_referer('portfolio_toggle_action', 'portfolio_toggle_nonce')) {
@@ -102,8 +93,8 @@ function eportfolio_render_settings_page() {
             <a href="?page=eportfolio-settings&tab=privacy" class="nav-tab <?php echo $active_tab === 'privacy' ? 'nav-tab-active' : ''; ?>">
                 Privacy Settings
             </a>
-            <a href="?page=eportfolio-settings&tab=student-menu" class="nav-tab <?php echo $active_tab === 'student-menu' ? 'nav-tab-active' : ''; ?>">
-                Student Menu
+            <a href="?page=eportfolio-settings&tab=menu-builder" class="nav-tab <?php echo $active_tab === 'menu-builder' ? 'nav-tab-active' : ''; ?>">
+                Menu Builder Guide
             </a>
             <a href="?page=eportfolio-settings&tab=advanced" class="nav-tab <?php echo $active_tab === 'advanced' ? 'nav-tab-active' : ''; ?>">
                 Advanced
@@ -231,78 +222,108 @@ function eportfolio_render_settings_page() {
         </div>
         <?php endif; ?>
         
-        <!-- Student Menu Tab -->
-        <?php if ($active_tab === 'student-menu'): ?>
+        <!-- Menu Builder Guide Tab -->
+        <?php if ($active_tab === 'menu-builder'): ?>
         <div class="eportfolio-tab-content">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px;">
                 
-                <!-- Menu Generator (Left) -->
+                <!-- ACF Integration (Left) -->
                 <div class="card" style="background: #f0f6fc; border-left: 4px solid #2271b1;">
-                    <h2 style="margin-top: 0;">Student Menu Generator</h2>
+                    <h2 style="margin-top: 0;">🎯 ACF Integration</h2>
                     
-                    <p class="description" style="margin-bottom: 10px; font-size: 12px;">
-                        Generate flat student directory (no auto-grouping)
+                    <p class="description" style="margin-bottom: 15px; font-size: 12px;">
+                        This theme works best with Advanced Custom Fields (ACF) for content types
                     </p>
                     
-                    <form method="post">
-                        <?php wp_nonce_field('student_menu_action', 'student_menu_nonce'); ?>
-                        
-                        <p style="margin-top: 20px;">
-                            <input type="submit" name="create_student_menu" class="button button-primary button-large" value="Generate Student Menu" />
+                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">1. Install ACF Plugin</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            Install the <a href="https://wordpress.org/plugins/advanced-custom-fields/" target="_blank">Advanced Custom Fields plugin</a>
                         </p>
-                    </form>
-                    
-                    <p class="description" style="margin-top: 15px; font-size: 12px; color: #666;">
-                        <strong>Note:</strong> Creates a flat menu. Group and style manually.
-                    </p>
-                </div>
-                
-                <!-- Current Students (Right) -->
-                <div class="card">
-                    <h2 style="margin-top: 0;">📋 Current Students</h2>
-                    
-                    <?php 
-                    $current_author_slug = get_option('eportfolio_author_slug', 'author');
-                    $authors = get_users(array(
-                        'role' => 'author',
-                        'blog_id' => get_current_blog_id(),
-                        'orderby' => 'display_name'
-                    ));
-                    
-                    if (!empty($authors)): ?>
-                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
-                        <?php foreach ($authors as $author): 
-                            $author_url = str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($author->ID));
-                            $post_count = count_user_posts($author->ID, 'post', true);
-                        ?>
-                        <div style="padding: 10px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong><?php echo esc_html($author->display_name); ?></strong>
-                                <br><small style="color: #666;"><?php echo $post_count; ?> posts</small>
-                            </div>
-                            <div>
-                                <a href="<?php echo esc_url($author_url); ?>" target="_blank" 
-                                   style="font-size: 11px; font-family: monospace; color: #0073aa; text-decoration: none;"
-                                   title="<?php echo esc_attr($author_url); ?>">
-                                    /<?php echo $current_author_slug; ?>/<?php echo esc_html($author->user_nicename); ?>
-                                </a>
-                                <button type="button" class="button button-small" 
-                                        onclick="navigator.clipboard.writeText('<?php echo esc_js($author_url); ?>'); this.innerText='✓'; setTimeout(() => this.innerText='Copy', 1500);" 
-                                        style="margin-left: 5px; font-size: 10px;">
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
                     </div>
                     
-                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
-                        <strong><?php echo count($authors); ?> students</strong> with Author role
-                    </p>
+                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">2. Create Content Type Taxonomy</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            In ACF → Taxonomies → Add New:
+                        </p>
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 11px; margin: 8px 0;">
+                            <strong>Label:</strong> Content Types<br>
+                            <strong>Key:</strong> content_type<br>
+                            <strong>Post Types:</strong> ✓ Post<br>
+                            <strong>Settings:</strong> ✓ Show in REST API<br>
+                            <strong>Settings:</strong> ✓ Show in Nav Menus
+                        </div>
+                    </div>
                     
-                    <?php else: ?>
-                    <p style="color: #d63638; font-style: italic;">No users with Author role found.</p>
-                    <?php endif; ?>
+                    <div style="background: white; padding: 15px; border-radius: 4px;">
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">3. Create Content Type Terms</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            In Posts → Content Types → Add New:
+                        </p>
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-size: 11px; margin: 8px 0;">
+                            Examples: Essay, Project, Reflection, Studio Work, Research
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Portfolio Links & Student URLs (Right) -->
+                <div class="card" style="background: #f6ffed; border-left: 4px solid #52c41a;">
+                    <h2 style="margin-top: 0;">🔗 Navigation & Links</h2>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Portfolio Links</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            To add "Portfolio →" links in Navigation menus:
+                        </p>
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 11px; margin: 8px 0;">
+                            <strong>URL:</strong> #<br>
+                            <strong>Text:</strong> Portfolio →<br>
+                            <strong>CSS Classes:</strong> portfolio-link-auto
+                        </div>
+                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">
+                            The theme will automatically set the correct portfolio URL and styling.
+                        </p>
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Student Directory</h4>
+                        <?php 
+                        $current_author_slug = get_option('eportfolio_author_slug', 'author');
+                        $authors = get_users(array(
+                            'role' => 'author',
+                            'blog_id' => get_current_blog_id(),
+                            'orderby' => 'display_name'
+                        ));
+                        ?>
+                        
+                        <?php if (!empty($authors)): ?>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            <strong><?php echo count($authors); ?> students</strong> - Use these URLs for manual links:
+                        </p>
+                        <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 10px;">
+                            <?php foreach ($authors as $author): 
+                                $author_url = str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($author->ID));
+                            ?>
+                            <div style="margin-bottom: 3px;">
+                                <strong><?php echo esc_html($author->display_name); ?></strong><br>
+                                <?php echo esc_html($author_url); ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php else: ?>
+                        <p style="color: #d63638; font-style: italic; font-size: 12px;">No users with Author role found.</p>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 4px;">
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Content Type Filtering</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            For advanced filtering behavior, install the 
+                            <a href="<?php echo admin_url('plugin-install.php?s=code+snippets&tab=search'); ?>" target="_blank">Code Snippets plugin</a>
+                            and check the theme documentation for filter examples.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -372,51 +393,6 @@ function eportfolio_render_settings_page() {
     <?php
 }
 
-/**
- * Create student author navigation menu
- * Generates a flat menu with all authors (no auto-grouping)
- */
-function eportfolio_create_student_author_menu() {
-    // Delete existing student menu if it exists
-    $existing_menu = wp_get_nav_menu_object('Student Authors');
-    if ($existing_menu) {
-        wp_delete_nav_menu($existing_menu->term_id);
-    }
-    
-    // Create new menu
-    $menu_id = wp_create_nav_menu('Student Authors');
-    
-    if (is_wp_error($menu_id)) {
-        return false;
-    }
-    
-    // Get all authors
-    $authors = get_users(array(
-        'role' => 'author',
-        'blog_id' => get_current_blog_id(),
-        'orderby' => 'display_name'
-    ));
-    
-    if (empty($authors)) {
-        return false;
-    }
-    
-    // Get custom author slug
-    $author_slug = get_option('eportfolio_author_slug', 'author');
-    
-    // Add all authors as flat menu items
-    foreach ($authors as $author) {
-        $author_url = str_replace('/author/', '/' . $author_slug . '/', get_author_posts_url($author->ID));
-        
-        wp_update_nav_menu_item($menu_id, 0, array(
-            'menu-item-title' => $author->display_name,
-            'menu-item-url' => $author_url,
-            'menu-item-status' => 'publish'
-        ));
-    }
-    
-    return true;
-}
 
 /**
  * Customize author archive rewrite rules to use custom slug

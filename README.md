@@ -1,19 +1,16 @@
-# ePortfolio Theme v2.0.1
+# ePortfolio Theme v2.2.0
 
-A WordPress theme for student portfolio management with granular privacy controls, dynamic content type filtering, and flexible page templates. Perfect for academic institutions, student cohorts, and creative portfolios.
+A lean WordPress theme focused on student portfolio management with granular privacy controls and dual archive system. Designed to work seamlessly with Advanced Custom Fields (ACF) for content organization.
 
-**Latest Update**: v2.0.1 - Removed auto-updater, fixed theme URIs, manual updates only
+**Latest Update**: v2.2.0 - Streamlined for ACF integration, removed built-in content types
 
 ## ✨ Features
 
-### **Current Features**
-
 ### **Core Features**
-- **🔒 Privacy Controls**: Public/private toggle for individual posts and pages
-- **🏷️ Content Type Filtering**: Dynamic taxonomy-based filtering with JavaScript
-- **🎯 Portfolio System**: Optional separate portfolio archive at `/portfolio/username`
-- **👥 Student Dashboard**: Custom admin menu for portfolio management  
-- **🔄 Auto-Updates**: GitHub-based theme updates with notifications
+- **🔒 Privacy Controls**: Granular public/private toggles for posts, pages, and portfolios
+- **🎯 Portfolio System**: Dual archive system - `/author/username` (all posts) + `/portfolio/username` (curated)
+- **👥 Student Dashboard**: Clean admin interface for privacy settings and navigation
+- **🔗 Smart Portfolio Links**: Automatic portfolio link generation via CSS classes
 
 ## Installation
 
@@ -22,8 +19,21 @@ A WordPress theme for student portfolio management with granular privacy control
 2. Upload the zip file to WordPress Admin > Appearance > Themes > Add New > Upload Theme
 3. Activate the theme
 
-### Auto-Updates
-Once installed, the theme will automatically check for updates from GitHub and notify you in the WordPress admin when new versions are available.
+### Updates
+This theme uses manual updates. Download new versions from the GitHub releases page as needed.
+
+## 🔌 Recommended Plugins
+
+### **Advanced Custom Fields (ACF)**
+This theme is designed to work with ACF for content organization:
+- **Content Types**: Create custom taxonomies for categorizing student work
+- **Custom Fields**: Add structured data to posts and portfolios
+- **Block Editor Integration**: ACF taxonomies appear in Navigation block menus
+
+Install ACF and create a "Content Types" taxonomy with terms like:
+- Essay, Project, Reflection, Studio Work, Research
+
+See the theme's **Menu Builder Guide** tab for detailed setup instructions.
 
 ## Development
 
@@ -34,11 +44,12 @@ eportfolio-theme/
 ├── style.css                 # Theme header and basic styles
 ├── inc/                      # Functionality modules
 │   ├── admin-menu.php        # Student dashboard menu
-│   ├── theme-updater.php     # GitHub update checker
 │   ├── privacy-logic.php     # Granular privacy controls
-│   ├── content-type-*.php    # Content type functionality (ACF compatible)
+│   ├── portfolio-link.php    # Smart portfolio link system
 │   ├── template-filters.php  # Conditional portfolio logic
-│   └── ...
+│   ├── shortcodes.php        # Dynamic shortcodes
+│   ├── post-metabox.php      # Portfolio post controls
+│   └── rewrite-rules.php     # URL structure
 ├── templates/                # Block theme templates
 │   ├── page.html            # Updated page template
 │   ├── page.html            # Standard page template

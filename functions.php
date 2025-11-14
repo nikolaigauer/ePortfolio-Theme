@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('EPORTFOLIO_VERSION', '2.0.1');
+define('EPORTFOLIO_VERSION', '2.2.0');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
@@ -26,10 +26,9 @@ function eportfolio_load_modules() {
         'privacy-logic',          // Public/private toggle logic
         'admin-menu',             // Student dashboard menu
         'post-metabox',           // Portfolio post checkbox
-        'content-type-taxonomy',  // Content Type taxonomy
-        'content-type-filter',    // Content type filter menu
         'template-filters',       // Template overrides and filters
         'shortcodes',             // Dynamic shortcodes for templates
+        'portfolio-link',         // Standalone portfolio link system
     );
     
     foreach ($modules as $module) {
