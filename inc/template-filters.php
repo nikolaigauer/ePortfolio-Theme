@@ -90,33 +90,31 @@ function eportfolio_get_portfolio_count($user_id) {
 }
 
 /**
- * Force portfolio template when viewing /portfolio/username URLs
- * For block themes, we need to filter the block template object, not the file path
+ * Template domino effect: author pages use archive template
+ * This allows portfolio (which uses author template) -> author -> archive
  */
-add_filter('get_block_templates', 'eportfolio_portfolio_block_template', 10, 3);
-function eportfolio_portfolio_block_template($query_result, $query, $template_type) {
-    // Only filter when viewing portfolio and looking for templates
-    if (!get_query_var('portfolio_view') || !is_author()) {
-        return $query_result;
-    }
-    
-    // We need to swap the 'author' template with 'portfolio' template
-    foreach ($query_result as $key => $template) {
-        // If this is the author template being loaded, swap it for portfolio
-        if ($template->slug === 'author') {
-            // Look for portfolio template
-            $portfolio_template_file = get_stylesheet_directory() . '/templates/portfolio.html';
-            
-            if (file_exists($portfolio_template_file)) {
-                // Create a new template object based on the portfolio template
-                $portfolio_template = clone $template;
-                $portfolio_template->slug = 'portfolio';
-                $portfolio_template->id = get_stylesheet() . '//portfolio';
-                $portfolio_template->title = 'Portfolio';
-                $portfolio_template->content = file_get_contents($portfolio_template_file);
+add_filter('get_block_templates', 'eportfolio_author_to_archive_template', 10, 3);
+function eportfolio_author_to_archive_template($query_result, $query, $template_type) {
+    // Only redirect regular author pages (not portfolio views) to archive template
+    if (!get_query_var('portfolio_view') && is_author()) {
+        
+        foreach ($query_result as $key => $template) {
+            if ($template->slug === 'author') {
+                // Look for archive template
+                $archive_template_file = get_stylesheet_directory() . '/templates/archive.html';
                 
-                // Replace the author template with portfolio template
-                $query_result[$key] = $portfolio_template;
+                if (file_exists($archive_template_file)) {
+                    // Create archive template object
+                    $archive_template = clone $template;
+                    $archive_template->slug = 'archive';
+                    $archive_template->id = get_stylesheet() . '//archive';
+                    $archive_template->title = 'Archive';
+                    $archive_template->content = file_get_contents($archive_template_file);
+                    
+                    // Replace author template with archive template
+                    $query_result[$key] = $archive_template;
+                }
+                break;
             }
         }
     }

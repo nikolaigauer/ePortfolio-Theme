@@ -440,22 +440,63 @@ function eportfolio_render_settings_page() {
         <?php else: ?>
         <!-- Non-admin users only see personal portfolio settings -->
         <div class="card" style="max-width: 600px;">
-            <h2>👤 Your Portfolio Privacy</h2>
-            
-            <form method="post">
-                <?php wp_nonce_field('portfolio_toggle_action', 'portfolio_toggle_nonce'); ?>
-                
-                <p>
-                    <label style="display: block; font-size: 16px; margin-bottom: 10px;">
-                        <input type="checkbox" name="portfolio_is_public" value="1" <?php checked($is_public, '1'); ?> />
-                        <strong>Make my portfolio publicly accessible</strong>
-                    </label>
-                </p>
-                
-                <p style="margin-top: 20px;">
-                    <input type="submit" name="save_portfolio_toggle" class="button button-primary button-large" value="Save Settings" />
-                </p>
-            </form>
+             <h2 style="margin-top: 0;">👤 Your Portfolio Privacy</h2>
+                    
+                    <form method="post">
+                        <?php wp_nonce_field('portfolio_toggle_action', 'portfolio_toggle_nonce'); ?>
+                        
+                        <p>
+                            <label style="display: block; font-size: 16px; margin-bottom: 10px;">
+                                <input type="checkbox" name="portfolio_is_public" value="1" <?php checked($is_public, '1'); ?> />
+                                <strong>Make my portfolio publicly accessible</strong>
+                            </label>
+                        </p>
+                        
+                        <div style="background: #f0f0f1; padding: 15px; border-left: 4px solid <?php echo ($is_public === '1') ? '#00a32a' : '#dba617'; ?>; margin: 15px 0;">
+                            <p style="margin: 0;">
+                                <strong>Current Status: 
+                                    <?php if ($is_public === '1'): ?>
+                                        <span style="color: #00a32a;">✓ Public</span>
+                                    <?php else: ?>
+                                        <span style="color: #dba617;">⚠ Private</span>
+                                    <?php endif; ?>
+                                </strong>
+                            </p>
+                        </div>
+                        
+                        <p class="description" style="margin-bottom: 15px; font-size: 12px;">
+                            <strong>Public:</strong> Viewable without login<br>
+                            <strong>Private:</strong> Login required
+                        </p>
+                        
+                        <hr style="margin: 20px 0;">
+                        
+                        <h3 style="margin-bottom: 10px;">Your URLs</h3>
+                        
+                        <p style="margin-bottom: 15px;">
+                            <strong>Portfolio URL:</strong><br>
+                            <a href="<?php echo esc_url($portfolio_url); ?>" target="_blank" style="font-size: 13px; word-break: break-all; font-family: monospace;">
+                                <?php echo esc_html($portfolio_url); ?>
+                            </a>
+                            <button type="button" class="button button-small" onclick="navigator.clipboard.writeText('<?php echo esc_js($portfolio_url); ?>'); this.innerText='Copied!'; setTimeout(() => this.innerText='Copy', 2000);" style="margin-left: 10px;">
+                                Copy
+                            </button>
+                        </p>
+                        
+                        <p>
+                            <strong>Author Archive URL:</strong><br>
+                            <a href="<?php echo esc_url(str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($user_id))); ?>" target="_blank" style="font-size: 13px; word-break: break-all; font-family: monospace;">
+                                <?php echo esc_html(str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($user_id))); ?>
+                            </a>
+                            <button type="button" class="button button-small" onclick="navigator.clipboard.writeText('<?php echo esc_js(str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($user_id))); ?>'); this.innerText='Copied!'; setTimeout(() => this.innerText='Copy', 2000);" style="margin-left: 10px;">
+                                Copy
+                            </button>
+                        </p>
+                        
+                        <p style="margin-top: 20px;">
+                            <input type="submit" name="save_portfolio_toggle" class="button button-primary button-large" value="Save Settings" />
+                        </p>
+                    </form>
         </div>
         <?php endif; ?>
     </div>

@@ -55,3 +55,28 @@ function eportfolio_deactivate() {
     flush_rewrite_rules();
 }
 add_action('switch_theme', 'eportfolio_deactivate');
+
+/**
+ * Filter Query Loop on portfolio pages to show only current author's posts
+ * Works with metabox filtering (_is_public_portfolio meta key)
+ */
+add_filter('query_loop_block_query_vars', 'eportfolio_portfolio_query_author', 10, 2);
+function eportfolio_portfolio_query_author($query, $block) {
+    // Only on portfolio views
+    if (get_query_var('portfolio_view') && is_author()) {
+        $author = get_queried_object();
+        if ($author && isset($author->ID)) {
+            $query['author'] = $author->ID;
+            
+            // Filter to only show portfolio posts (metabox checked)
+            $query['meta_query'] = array(
+                array(
+                    'key' => '_is_public_portfolio',
+                    'value' => '1',
+                    'compare' => '='
+                )
+            );
+        }
+    }
+    return $query;
+}

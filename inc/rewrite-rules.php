@@ -13,7 +13,14 @@ if (!defined('ABSPATH')) {
  */
 add_action('init', 'eportfolio_register_rewrites', 5);
 function eportfolio_register_rewrites() {
-    // Add rewrite rule for portfolio/username
+    // Add rewrite rule for portfolio/username with pagination
+    add_rewrite_rule(
+        '^portfolio/([^/]+)/page/([0-9]+)/?$',
+        'index.php?author_name=$matches[1]&portfolio_view=1&paged=$matches[2]',
+        'top'
+    );
+    
+    // Add rewrite rule for portfolio/username (base page)
     add_rewrite_rule(
         '^portfolio/([^/]+)/?$',
         'index.php?author_name=$matches[1]&portfolio_view=1',

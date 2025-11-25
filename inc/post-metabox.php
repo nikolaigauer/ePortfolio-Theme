@@ -62,20 +62,20 @@ function eportfolio_render_portfolio_metabox($post) {
         
         <?php if ($post->post_type === 'post'): ?>
         <p class="description" style="margin: 8px 0 0 0; font-size: 12px; color: #646970;">
-            Shows on <code>/portfolio/username</code> + makes post publicly shareable
+            Shows on <code>/portfolio/username</code> (public access controlled by portfolio privacy setting)
         </p>
         <?php endif; ?>
         
         <?php if ($is_portfolio_post === '1'): ?>
         <div style="background: #d5f4e6; border-left: 4px solid #00a32a; padding: 10px; margin-top: 12px;">
             <p style="margin: 0; color: #007017; font-size: 12px;">
-                ✓ <strong>Portfolio post</strong>
+                ✓ <strong>Portfolio post</strong> - appears on portfolio page
             </p>
         </div>
         <?php else: ?>
         <div style="background: #f0f0f1; border-left: 4px solid #646970; padding: 10px; margin-top: 12px;">
             <p style="margin: 0; color: #1e1e1e; font-size: 12px;">
-                ℹ <strong>Regular post</strong>
+                ℹ <strong>Regular post</strong> - hidden from portfolio
             </p>
         </div>
         <?php endif; ?>
