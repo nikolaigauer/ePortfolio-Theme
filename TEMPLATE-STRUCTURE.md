@@ -1,135 +1,110 @@
 # ePortfolio Theme - Template Structure Reference
 
-**Last Updated:** October 24, 2025
+**Last Updated:** v2.3.0
 
 ---
 
-## Template Parts (Header) → Template Mapping
+## Template Routing ("Domino Effect")
 
-| Header Part | Used By Template | Purpose | Navigation Content |
-|-------------|------------------|---------|-------------------|
-| `header-landing.html` | `home.html` | Cohort landing page with hero image | Empty (for Student Authors menu) |
-| `header-student.html` | `author.html` | Student author archive | Empty (for Content Type Filter menu) |
-| `header-portfolio.html` | `portfolio.html` | Student portfolio showcase | Empty (can use same OR different menu) |
-| `header-single.html` | `single.html` | Individual post view | N/A (just shows "Viewing Single Post:" + cohort link) |
-| `footer.html` | All templates | Universal footer | N/A |
+The theme uses a PHP-based template routing system that controls which template WordPress loads:
+
+| URL Pattern | Template Loaded | Query Filter | Header Part |
+|-------------|-----------------|--------------|-------------|
+| `/portfolio/username` | `author.html` | Portfolio posts only (`_is_public_portfolio=1`) | `header-portfolio.html` |
+| `/author/username` | `archive.html` | All posts | `header-student.html` |
+| `/` (home) | `home.html` | All posts | `header-landing.html` |
+| Single post | `single.html` | N/A | `header-single.html` |
+
+### How It Works
+
+1. **Portfolio URLs** (`/portfolio/username`):
+   - Rewrite rule sets `author_name` + `portfolio_view=1`
+   - WordPress loads `author.html` (standard author template)
+   - PHP filter adds meta_query to show only portfolio-marked posts
+
+2. **Author URLs** (`/author/username`):
+   - WordPress identifies as author archive
+   - `get_block_templates` filter swaps content with `archive.html`
+   - All posts shown (no portfolio filtering)
+
+### To Customize Templates
+
+- **Portfolio pages** → Edit `author.html` in Site Editor
+- **Author archives** → Edit `archive.html` in Site Editor
+- **Landing page** → Edit `home.html` in Site Editor
 
 ---
 
-## Template Purpose Guide
+## Template Parts (Headers)
+
+| Header Part | Used By | Purpose |
+|-------------|---------|---------|
+| `header-landing.html` | `home.html` | Cohort landing with hero image |
+| `header-student.html` | `archive.html` | Author archive header |
+| `header-portfolio.html` | `author.html` | Portfolio view header |
+| `header-single.html` | `single.html` | Individual post header |
+| `header-page.html` | `page.html` | Standard page header |
+| `footer.html` | All templates | Universal footer |
+
+---
+
+## Template Files
 
 ### `home.html` - Cohort Landing Page
-**Header:** `header-landing`  
-**Layout:** Hero image + sidebar with class info + main content area  
-**Shows:** All posts from all students (cohort-wide feed)  
-**Navigation:** Empty block for "Student Authors" menu (dropdown with A-M and N-Z groups)
+- **Shows:** All posts from all students (cohort-wide feed)
+- **Navigation:** Empty block for "Student Authors" menu
 
-### `author.html` - Student Author Archive  
-**Header:** `header-student`  
-**Layout:** Student name header + sidebar with cohort link + main content area  
-**Shows:** ALL posts by one student (comprehensive archive)  
-**Navigation:** Empty block for "Content Type Filter" menu  
-**Note:** This is the "process" view - everything the student has created
+### `author.html` - Portfolio View (NOT regular author archive!)
+- **URL:** `/portfolio/username`
+- **Shows:** Only posts marked "Include in portfolio"
+- **Navigation:** Empty block for content filtering
 
-### `portfolio.html` - Student Portfolio Showcase
-**Header:** `header-portfolio`  
-**Layout:** Student name header + sidebar (with "Life's a highway" marker) + main content area  
-**Shows:** Only posts marked "Show in public portfolio" by one student (curated)  
-**Navigation:** Empty block - can use same "Content Type Filter" OR create portfolio-specific menu  
-**Note:** This is the "presentation" view - student's best/selected work  
-**Template Override:** WordPress forced to use this template via `template_include` filter when `portfolio_view=1` query var present
+### `archive.html` - Author Archive
+- **URL:** `/author/username`
+- **Shows:** ALL posts by one student
+- **Navigation:** Empty block for content filtering
+- **Note:** Also used as fallback for category/tag archives
 
-### `single.html` - Individual Post View
-**Header:** `header-single`  
-**Shows:** Full single post with comments, tags, navigation to prev/next  
-**Navigation:** Just cohort link in header
+### `single.html` - Individual Post
+- **Shows:** Full post with comments
+- **Navigation:** Cohort link in header
+
+### `page.html` - Standard Page
+- **Shows:** Page content
+- **Navigation:** Standard site navigation
 
 ---
 
-## Header Part Details
+## Query Filtering
 
-### `header-landing.html`
-```
-Pattern: patterns/header-landing.php
-Contains: Hero image cover + site title + empty navigation block
-Comments: Yes - explains Student Authors menu workflow
-```
+Portfolio posts are filtered using the `_is_public_portfolio` post meta:
 
-### `header-student.html`
-```
-Pattern: None (direct HTML)
-Contains: Query title (student name) + empty navigation block
-Comments: Yes - explains Content Type Filter menu workflow
-Font: Student name is 4.5em, 600 weight, uppercase
+```php
+// In functions.php - filters Query Loop block
+add_filter('query_loop_block_query_vars', 'eportfolio_portfolio_query_author', 10, 2);
+
+// In template-filters.php - filters main query
+add_action('pre_get_posts', 'eportfolio_filter_portfolio_query');
 ```
 
-### `header-single.html`
-```
-Pattern: None (direct HTML)
-Contains: "Viewing Single Post:" text + cohort link shortcode
-No navigation block needed
+Both filters check for `portfolio_view` query var and add:
+```php
+$query['meta_query'] = array(
+    array(
+        'key' => '_is_public_portfolio',
+        'value' => '1',
+        'compare' => '='
+    )
+);
 ```
 
 ---
 
-## Current State Notes
+## Body Classes
 
-**✅ Complete:**
-- All headers properly named and documented
-- Navigation blocks empty and explained
-- Template → header mapping is clear
+The theme adds body classes for template-specific styling:
 
-**🟡 Pending Decision:**
-- Should `portfolio.html` use a different header than `author.html`?
-- Should portfolio navigation be different from author navigation?
-- How to implement the distinction technically?
-
-**💡 Future Consideration:**
-- `header-portfolio.html` - Separate header for portfolio with different navigation approach
-- Conditional logic in `header-student.html` to show different nav based on context
-- Or keep them the same for MVP simplicity
-
----
-
-## Patterns vs Template Parts
-
-**Pattern (PHP file):**
-- `patterns/header-landing.php` - Dynamic pattern that can use PHP
-- References site assets with `get_template_directory_uri()`
-- More flexible, can include logic
-
-**Template Part (HTML file):**
-- `parts/header-landing.html` - Just references the pattern
-- `parts/header-student.html` - Static HTML blocks
-- `parts/header-single.html` - Static HTML blocks
-- Simpler, no PHP needed
-
----
-
-## Quick Reference: What Shows Where
-
-**Landing Page (`home.html`):**
-- All students' posts
-- Latest posts sidebar
-- Latest comments sidebar
-- Class info placeholder
-
-**Author Archive (`/author/username`):**
-- One student's ALL posts
-- Process-oriented
-- Can filter by content type
-- Link to portfolio →
-
-**Portfolio (`/portfolio/username`):**
-- One student's CURATED posts only
-- Presentation-oriented
-- Can filter by content type
-- "Life's a highway" sidebar marker
-- Link to author archive? (not yet implemented)
-
-**Single Post (`/year/month/day/post-slug`):**
-- Full post content
-- Comments
-- Tags
-- Prev/Next navigation
-- Author info
+- `portfolio-view` - On `/portfolio/username` pages
+- `portfolio-archive` - On `/portfolio/username` pages
+- `author` - On all author-related pages
+- `author-{username}` - Specific author identifier

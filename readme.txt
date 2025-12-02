@@ -3,12 +3,27 @@
 Contributors: 
 Requires at least: 6.8
 Tested up to: 6.8
-Requires PHP: 5.7
+Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 
 == Changelog ==
+
+= 2.3.1 =
+* Code quality improvements and cleanup
+* Fixed version consistency across theme files
+* Template optimization
+* Enhanced security and performance
+
+= 2.3.0 =
+* Major portfolio template breakthrough + enhanced security
+
+= 2.2.0 =
+* Streamline theme for ACF integration
+
+= 2.0.1 =
+* Remove auto-updater and fix theme URIs
 
 = 1.0.0 =
 * Initial release

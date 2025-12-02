@@ -1,8 +1,8 @@
-# ePortfolio Theme v2.2.0
+# ePortfolio Theme v2.3.0
 
 A lean WordPress theme focused on student portfolio management with granular privacy controls and dual archive system. Designed to work seamlessly with Advanced Custom Fields (ACF) for content organization.
 
-**Latest Update**: v2.2.0 - Streamlined for ACF integration, removed built-in content types
+**Latest Update**: v2.3.0 - Major template system breakthrough, full block editor control for portfolio pages
 
 ## ✨ Features
 
@@ -41,26 +41,41 @@ See the theme's **Menu Builder Guide** tab for detailed setup instructions.
 ```
 eportfolio-theme/
 ├── functions.php              # Main theme functions
-├── style.css                 # Theme header and basic styles
-├── inc/                      # Functionality modules
-│   ├── admin-menu.php        # Student dashboard menu
-│   ├── privacy-logic.php     # Granular privacy controls
-│   ├── portfolio-link.php    # Smart portfolio link system
-│   ├── template-filters.php  # Conditional portfolio logic
-│   ├── shortcodes.php        # Dynamic shortcodes
-│   ├── post-metabox.php      # Portfolio post controls
-│   └── rewrite-rules.php     # URL structure
-├── templates/                # Block theme templates
-│   ├── page.html            # Updated page template
-│   ├── page.html            # Standard page template
-│   ├── portfolio.html       # Portfolio archive template
-│   └── ...
-├── parts/                    # Template parts
-│   ├── header-*.html        # Various header templates
-│   ├── header-portfolio.html# Portfolio header
-│   └── ...
-└── patterns/                 # Block patterns
+├── style.css                  # Theme header and basic styles
+├── inc/                       # Functionality modules
+│   ├── admin-menu.php         # Student dashboard menu
+│   ├── privacy-logic.php      # Granular privacy controls
+│   ├── portfolio-link.php     # Smart portfolio link system
+│   ├── template-filters.php   # Template routing & query filters
+│   ├── shortcodes.php         # Dynamic shortcodes
+│   ├── post-metabox.php       # Portfolio post controls
+│   └── rewrite-rules.php      # URL structure
+├── templates/                 # Block theme templates
+│   ├── home.html              # Cohort landing page
+│   ├── author.html            # Portfolio view (/portfolio/username)
+│   ├── archive.html           # Author archive (/author/username)
+│   ├── single.html            # Individual post view
+│   └── page.html              # Standard page template
+├── parts/                     # Template parts
+│   ├── header-*.html          # Various header templates
+│   └── footer.html            # Site footer
+└── patterns/                  # Block patterns
 ```
+
+### Template Routing (v2.3.0 "Domino Effect")
+
+The theme uses a smart template routing system:
+
+| URL Pattern | Template Used | Query Filter | Purpose |
+|-------------|---------------|--------------|---------|
+| `/portfolio/username` | `author.html` | Portfolio posts only | Curated public portfolio |
+| `/author/username` | `archive.html` | All posts | Complete author archive |
+
+This means:
+- Edit **`author.html`** to customize `/portfolio/username` appearance
+- Edit **`archive.html`** to customize `/author/username` appearance
+
+Both templates are fully editable in the WordPress Site Editor.
 
 ## 🎛️ Admin Interface
 
@@ -94,10 +109,10 @@ The theme includes content type taxonomy:
 - Dynamic menu generation
 - Portfolio organization
 
-### **3. Templates**
-- **`page.html`**: Standard page layout
-- **`portfolio.html`**: Portfolio archive template
-- **`single.html`**: Individual post template
+### **3. Template Editing**
+- **Portfolio pages** (`/portfolio/username`): Edit `author.html` in Site Editor
+- **Author archives** (`/author/username`): Edit `archive.html` in Site Editor
+- **Individual posts**: Edit `single.html` in Site Editor
 
 ### **4. Menu Usage**
 1. Generate menus using admin interface
@@ -116,8 +131,8 @@ The theme includes content type taxonomy:
 1. Fork or clone the repository
 2. Make your changes  
 3. Update version in `style.css` and `functions.php`
-4. Create a git tag: `git tag v2.0.2`
-5. Push the tag: `git push origin v2.0.2` 
+4. Create a git tag: `git tag v2.3.1`
+5. Push the tag: `git push origin v2.3.1` 
 6. GitHub Actions will automatically create a release
 
 ## Requirements

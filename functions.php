@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('EPORTFOLIO_VERSION', '2.2.0');
+define('EPORTFOLIO_VERSION', '2.3.1');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
