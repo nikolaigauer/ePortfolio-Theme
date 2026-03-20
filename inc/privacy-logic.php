@@ -10,10 +10,9 @@ if (!defined('ABSPATH')) {
 
 /**
  * Site-wide privacy control with portfolio exceptions
- * Three-level privacy hierarchy:
+ * Two-level privacy hierarchy:
  * 1. Global site privacy (admin control)
- * 2. Individual portfolio privacy (student control, can penetrate global)
- * 3. Individual post privacy (student control, can penetrate portfolio + global)
+ * 2. Individual portfolio privacy (student control)
  */
 add_action('template_redirect', 'cohort_theme_privacy_control', 1);
 function cohort_theme_privacy_control() {
@@ -25,105 +24,88 @@ function cohort_theme_privacy_control() {
     // Check global privacy setting
     $site_is_public = get_option('eportfolio_site_is_public', '0');
     
-    // If site is globally public, only enforce individual privacy locks (Level 2 & 3)
+    // ========================================
+    // GLOBALLY PUBLIC SITE - Simple rules
+    // ========================================
     if ($site_is_public === '1') {
-        // Check if we're on a portfolio page and if it's set to private
-        $clean_uri = strtok($_SERVER['REQUEST_URI'], '?'); // Remove query parameters
-        if (preg_match('#^/portfolio/([^/]+)/?$#', $clean_uri, $matches)) {
+
+        // Rule 1: Portfolio pages follow portfolio-level privacy
+        // Strip query string before matching so ?show=POST_ID URLs are handled correctly.
+        $public_uri_path = strtok($_SERVER['REQUEST_URI'], '?');
+        if (preg_match('#^/portfolio/([^/]+)/?$#', $public_uri_path, $matches)) {
             $user = get_user_by('slug', $matches[1]);
             if ($user) {
                 $portfolio_is_public = get_user_meta($user->ID, 'portfolio_is_public', true);
-                // If explicitly set to private, block it
                 if ($portfolio_is_public === '0') {
-                    auth_redirect();
+                    auth_redirect(); // Block if portfolio is private
                 }
             }
         }
         
-        // Check if we're on a single post and if the author wants it private
+        // Rule 2: Posts follow portfolio-level privacy
         if (is_singular('post')) {
             $post_id = get_the_ID();
             $author_id = get_post_field('post_author', $post_id);
             $portfolio_is_public = get_user_meta($author_id, 'portfolio_is_public', true);
-            // COMMENTED OUT: Portfolio metabox no longer automatically makes posts public
-            // $post_is_public = get_post_meta($post_id, '_is_public_portfolio', true);
             
-            // If author's portfolio is explicitly private, block the post
-            // MODIFIED: Only check portfolio-level privacy, not individual post metabox
             if ($portfolio_is_public === '0') {
-                auth_redirect();
-            }
-            
-            // TODO: In future, add separate "make post public" metabox if needed
-            // For now, posts are only public if the entire portfolio is public
-        }
-        
-        // Check if we're on a page and if it's explicitly marked as private
-        if (is_page()) {
-            $page_id = get_the_ID();
-            $page_is_public = get_post_meta($page_id, '_is_public_portfolio', true);
-            
-            // If page is explicitly marked as private (value is '0'), block it
-            if ($page_is_public === '0') {
-                auth_redirect();
+                auth_redirect(); // Block if author's portfolio is private
             }
         }
         
-        // Otherwise, allow access (site is public)
+        // Rule 3: All pages are public (metabox ignored)
+        // No check needed - pages are public by default
+        
+        // Everything else is public
         return;
     }
     
-    // Site is globally private (login required) - check for exceptions
+    // ========================================
+    // GLOBALLY PRIVATE SITE - Exception rules
+    // ========================================
     
-    // Parse URL properly for subdirectory installs
-    $request_uri = $_SERVER['REQUEST_URI'];
+    // Parse URL properly for subdirectory installs.
+    // Strip query string first so ?show=POST_ID never breaks the regex checks below.
+    $request_uri = strtok($_SERVER['REQUEST_URI'], '?');
     $site_path = parse_url(home_url(), PHP_URL_PATH);
     if ($site_path) {
         $request_uri = str_replace($site_path, '', $request_uri);
     }
     
-    // Allow the portfolio index page
+    // Exception 1: Portfolio index page is always accessible
     if (preg_match('#^/portfolio/?$#', $request_uri)) {
-        return; // Allow access to portfolio directory
+        return;
     }
     
-    // Allow public portfolio endpoints (strip query parameters for pattern matching)
-    $clean_uri = strtok($request_uri, '?'); // Remove query parameters
-    if (preg_match('#^/portfolio/([^/]+)/?$#', $clean_uri, $matches)) {
+    // Exception 2: Public portfolios are accessible
+    if (preg_match('#^/portfolio/([^/]+)/?$#', $request_uri, $matches)) {
         $user = get_user_by('slug', $matches[1]);
         if ($user && get_user_meta($user->ID, 'portfolio_is_public', true) === '1') {
+            return;
+        }
+    }
+    
+    // Exception 3: Posts are accessible if:
+    //   - Post metabox is checked (portfolio inclusion), OR
+    //   - Author's portfolio is public
+    if (is_singular('post')) {
+        $post_id = get_the_ID();
+        $author_id = get_post_field('post_author', $post_id);
+        $post_is_public = get_post_meta($post_id, '_is_public_portfolio', true);
+        $portfolio_is_public = get_user_meta($author_id, 'portfolio_is_public', true);
+        
+        if ($post_is_public === '1' || $portfolio_is_public === '1') {
             return; // Allow access
         }
     }
     
-    // Allow individual posts with granular control (Level 3)
-    // MODIFIED: Posts are only public if the entire portfolio is public
-    // Portfolio metabox (_is_public_portfolio) now only controls portfolio inclusion, not public access
-    if (is_singular('post')) {
-        $post_id = get_the_ID();
-        $author_id = get_post_field('post_author', $post_id);
-        // COMMENTED OUT: Portfolio metabox no longer grants public access
-        // $post_is_public = get_post_meta($post_id, '_is_public_portfolio', true);
-        $portfolio_is_public = get_user_meta($author_id, 'portfolio_is_public', true);
-        
-        // Allow only if entire portfolio is public
-        // MODIFIED: Removed individual post override for security
-        if ($portfolio_is_public === '1') {
-            return; // Allow access to this post
-        }
-        
-        // TODO: In future, could add separate "make post public" control if needed
-    }
-    
-    // Allow individual pages with granular control
-    // A page can be public if it's explicitly marked as public
+    // Exception 4: Pages are accessible if metabox is checked
     if (is_page()) {
         $page_id = get_the_ID();
         $page_is_public = get_post_meta($page_id, '_is_public_portfolio', true);
         
-        // Allow if page is explicitly marked public
         if ($page_is_public === '1') {
-            return; // Allow access to this page
+            return; // Allow access
         }
     }
     

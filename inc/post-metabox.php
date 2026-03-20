@@ -13,17 +13,19 @@ if (!defined('ABSPATH')) {
  */
 add_action('add_meta_boxes', 'eportfolio_add_portfolio_metabox');
 function eportfolio_add_portfolio_metabox() {
-    // Add metabox for posts
-    add_meta_box(
-        'eportfolio_portfolio_box',                     // Unique ID
-        'Portfolio Settings',                        // Box title
-        'eportfolio_render_portfolio_metabox',          // Callback function
-        'post',                                         // Post type
-        'side',                                         // Context (side, normal, advanced)
-        'high'                                          // Priority
-    );
-    
-    // Add metabox for pages
+    // Portfolio metabox on posts — only when Portfolio Curation feature is enabled
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
+        add_meta_box(
+            'eportfolio_portfolio_box',
+            'Portfolio Settings',
+            'eportfolio_render_portfolio_metabox',
+            'post',
+            'side',
+            'high'
+        );
+    }
+
+    // Page privacy metabox — always available (controls page-level access, not portfolio)
     add_meta_box(
         'eportfolio_privacy_box',                       // Unique ID
         'Privacy Settings',                          // Box title
@@ -170,6 +172,9 @@ function eportfolio_save_portfolio_meta($post_id, $post) {
  */
 add_filter('manage_posts_columns', 'eportfolio_add_portfolio_column');
 function eportfolio_add_portfolio_column($columns) {
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) !== '1' ) {
+        return $columns;
+    }
     // Insert the column after the title
     $new_columns = array();
     foreach ($columns as $key => $value) {
@@ -202,6 +207,7 @@ function eportfolio_add_privacy_column($columns) {
  */
 add_action('manage_posts_custom_column', 'eportfolio_display_portfolio_column', 10, 2);
 function eportfolio_display_portfolio_column($column, $post_id) {
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) !== '1' ) return;
     if ($column === 'portfolio_status') {
         $is_portfolio = get_post_meta($post_id, '_is_public_portfolio', true);
         if ($is_portfolio === '1') {
@@ -232,6 +238,7 @@ function eportfolio_display_privacy_column($column, $post_id) {
  */
 add_filter('manage_edit-post_sortable_columns', 'eportfolio_portfolio_column_sortable');
 function eportfolio_portfolio_column_sortable($columns) {
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) !== '1' ) return $columns;
     $columns['portfolio_status'] = 'portfolio_status';
     return $columns;
 }
