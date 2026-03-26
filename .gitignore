@@ -10,6 +10,10 @@ wp-content/wp-cache-config.php
 wp-content/cache/
 wp-content/cache/supercache/
 
+# Local dev / Claude Code internals
+CLAUDE.md
+.claude/
+
 # macOS
 .DS_Store
 .DS_Store?
