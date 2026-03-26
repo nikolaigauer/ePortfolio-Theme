@@ -115,11 +115,22 @@ function eportfolio_render_settings_page() {
     $site_is_public = get_option('eportfolio_site_is_public', '0');
     $cohort_url = get_option('eportfolio_cohort_url', home_url('/'));
     $current_author_slug = get_option('eportfolio_author_slug', 'author');
-    
+    $portfolio_on = get_option('eportfolio_feature_portfolio', '0') === '1';
+
     ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-        
+        <style>
+        .eportfolio-toggle-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .eportfolio-toggle { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+        .eportfolio-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .eportfolio-toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .25s; border-radius: 26px; }
+        .eportfolio-toggle .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .25s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+        .eportfolio-toggle input:checked + .slider { background-color: #00a32a; }
+        .eportfolio-toggle input:checked + .slider:before { transform: translateX(22px); }
+        .eportfolio-toggle input:focus + .slider { box-shadow: 0 0 0 2px #2271b1; }
+        </style>
+
         <?php if ($is_admin): ?>
         <!-- Tab Navigation (Admin Only) -->
         <nav class="nav-tab-wrapper wp-clearfix" style="margin: 20px 0;">
@@ -135,29 +146,30 @@ function eportfolio_render_settings_page() {
             <a href="?page=eportfolio-settings&tab=submissions" class="nav-tab <?php echo $active_tab === 'submissions' ? 'nav-tab-active' : ''; ?>">
                 Submissions
             </a>
-            <a href="?page=eportfolio-settings&tab=features" class="nav-tab <?php echo $active_tab === 'features' ? 'nav-tab-active' : ''; ?>">
-                Features
-            </a>
         </nav>
         
         <!-- Privacy Settings Tab -->
         <?php if ($active_tab === 'privacy'): ?>
         <div class="eportfolio-tab-content">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px;">
-                
-                <!-- Global Privacy (Left) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; align-items: start;">
+
+                <!-- Left column: admin-only settings -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+
+                <!-- Global Privacy -->
                 <div class="card" style="background: #fff3cd; border-left: 4px solid #ff9800;">
                     <h2 style="margin-top: 0;">Global Site Privacy</h2>
                     
                     <form method="post">
                         <?php wp_nonce_field('global_privacy_action', 'global_privacy_nonce'); ?>
                         
-                        <p>
-                            <label style="display: block; font-size: 16px; margin-bottom: 10px;">
+                        <div class="eportfolio-toggle-wrap">
+                            <label class="eportfolio-toggle">
                                 <input type="checkbox" name="site_is_public" value="1" <?php checked($site_is_public, '1'); ?> />
-                                <strong>Make entire site publicly accessible</strong>
+                                <span class="slider"></span>
                             </label>
-                        </p>
+                            <strong style="font-size: 15px;">Make entire site publicly accessible</strong>
+                        </div>
                         
                         <div style="background: white; padding: 15px; border-left: 4px solid <?php echo ($site_is_public === '1') ? '#00a32a' : '#d63638'; ?>; margin: 15px 0;">
                             <p style="margin: 0;">
@@ -196,7 +208,47 @@ function eportfolio_render_settings_page() {
                         </p>
                     </form>
                 </div>
-                
+
+                <!-- Portfolio Curation (admin only) -->
+                <div class="card" style="background: #f6ffed; border-left: 4px solid #52c41a;">
+                    <h2 style="margin-top: 0;">Portfolio Curation</h2>
+                    <p style="font-size: 13px; margin-bottom: 16px; color: #444;">
+                        When enabled, each student gets a curated <strong>/portfolio/username/</strong> page alongside
+                        their author archive. Students choose which posts appear there — making portfolio-building
+                        a deliberate, reflective act. A "Portfolio" checkbox also appears in the post editor.
+                    </p>
+                    <form method="post">
+                        <?php wp_nonce_field('features_action', 'features_nonce'); ?>
+                        <div class="eportfolio-toggle-wrap">
+                            <label class="eportfolio-toggle">
+                                <input type="checkbox" name="feature_portfolio" value="1" <?php checked($portfolio_on); ?> />
+                                <span class="slider"></span>
+                            </label>
+                            <strong style="font-size: 15px;">Enable Portfolio Curation</strong>
+                        </div>
+                        <div style="background: white; padding: 12px; border-left: 4px solid <?php echo $portfolio_on ? '#00a32a' : '#646970'; ?>; margin: 12px 0;">
+                            <p style="margin: 0; font-size: 13px;">
+                                <strong>Current Status:
+                                    <?php if ($portfolio_on): ?>
+                                        <span style="color: #00a32a;">&#10003; Enabled</span>
+                                    <?php else: ?>
+                                        <span style="color: #646970;">&mdash; Disabled</span>
+                                    <?php endif; ?>
+                                </strong>
+                            </p>
+                        </div>
+                        <p style="font-size: 12px; color: #646970; margin-bottom: 16px;">
+                            <strong>Disabled:</strong> Students only have their author archive — clean and simple.<br>
+                            <strong>Enabled:</strong> Students can curate a separate public portfolio.
+                        </p>
+                        <p>
+                            <input type="submit" name="save_features" class="button button-primary" value="Save" />
+                        </p>
+                    </form>
+                </div>
+
+                </div><!-- end left column -->
+
                 <!-- Portfolio / Archive (Right) — conditional on feature flag -->
                 <?php if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) : ?>
                 <div class="card">
@@ -205,12 +257,13 @@ function eportfolio_render_settings_page() {
                     <form method="post">
                         <?php wp_nonce_field('portfolio_toggle_action', 'portfolio_toggle_nonce'); ?>
 
-                        <p>
-                            <label style="display: block; font-size: 16px; margin-bottom: 10px;">
+                        <div class="eportfolio-toggle-wrap">
+                            <label class="eportfolio-toggle">
                                 <input type="checkbox" name="portfolio_is_public" value="1" <?php checked($is_public, '1'); ?> />
-                                <strong>Make my portfolio publicly accessible</strong>
+                                <span class="slider"></span>
                             </label>
-                        </p>
+                            <strong style="font-size: 15px;">Make my portfolio publicly accessible</strong>
+                        </div>
 
                         <div style="background: #f0f0f1; padding: 15px; border-left: 4px solid <?php echo ($is_public === '1') ? '#00a32a' : '#dba617'; ?>; margin: 15px 0;">
                             <p style="margin: 0;">
@@ -263,7 +316,7 @@ function eportfolio_render_settings_page() {
                     <h2 style="margin-top: 0;">👤 Your Archive</h2>
                     <p class="description" style="font-size: 13px; margin-bottom: 15px;">
                         Portfolio curation is <strong>disabled</strong> for this site. Students submit reflections directly to their author archive.
-                        Enable it in the <a href="?page=eportfolio-settings&tab=features">Features tab</a>.
+                        Enable it in <a href="?page=eportfolio-settings&tab=privacy">Privacy Settings</a>.
                     </p>
                     <h3 style="margin-bottom: 10px;">Your Archive URL</h3>
                     <p>
@@ -285,43 +338,35 @@ function eportfolio_render_settings_page() {
         <div class="eportfolio-tab-content">
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1400px;">
                 
-                <!-- ACF Integration (Left) -->
+                <!-- Content Types (Left) -->
                 <div class="card" style="background: #f0f6fc; border-left: 4px solid #2271b1;">
-                    <h2 style="margin-top: 0;">🎯 ACF Integration</h2>
-                    
+                    <h2 style="margin-top: 0;">🏷️ Content Types</h2>
+
                     <p class="description" style="margin-bottom: 15px; font-size: 12px;">
-                        This theme works best with Advanced Custom Fields (ACF) for content types
+                        The theme registers a <strong>content-type</strong> taxonomy automatically — no plugin required.
+                        "Reflection" is seeded on activation so it works out of the box.
                     </p>
-                    
+
                     <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">1. Install ACF Plugin</h4>
+                        <h4 style="margin: 0 0 8px 0; color: #0073aa;">Add more content types</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
-                            Install the <a href="https://wordpress.org/plugins/advanced-custom-fields/" target="_blank">Advanced Custom Fields plugin</a>
-                        </p>
-                    </div>
-                    
-                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">2. Create Content Type Taxonomy</h4>
-                        <p style="margin: 5px 0; font-size: 12px;">
-                            In ACF → Taxonomies → Add New:
-                        </p>
-                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 11px; margin: 8px 0;">
-                            <strong>Label:</strong> Content Types<br>
-                            <strong>Key:</strong> content_type<br>
-                            <strong>Post Types:</strong> ✓ Post<br>
-                            <strong>Settings:</strong> ✓ Show in REST API<br>
-                            <strong>Settings:</strong> ✓ Show in Nav Menus
-                        </div>
-                    </div>
-                    
-                    <div style="background: white; padding: 15px; border-radius: 4px;">
-                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">3. Create Content Type Terms</h4>
-                        <p style="margin: 5px 0; font-size: 12px;">
-                            In Posts → Content Types → Add New:
+                            Go to <strong>Posts → Content Types → Add New</strong> and create a term for each type of work students produce.
                         </p>
                         <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-size: 11px; margin: 8px 0;">
-                            Examples: Essay, Project, Reflection, Studio Work, Research
+                            Examples: Essay, Project, Lab Report, Studio Work, Research
                         </div>
+                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">
+                            Submissions are auto-tagged "Reflection" by default. Each reflection page can specify a different term.
+                        </p>
+                    </div>
+
+                    <div style="background: white; padding: 15px; border-radius: 4px;">
+                        <h4 style="margin: 0 0 8px 0; color: #0073aa;">Filtering on the archive page</h4>
+                        <p style="margin: 5px 0; font-size: 12px;">
+                            The student archive template uses Query Loop blocks scoped to the current author.
+                            Add a <code>&lt;details&gt;</code> block per content type with a filtered Query Loop inside —
+                            students can expand and collapse each section.
+                        </p>
                     </div>
                 </div>
                 
@@ -406,21 +451,6 @@ function eportfolio_render_settings_page() {
                     <h2 style="margin-top: 0;">🔗 Navigation & Links</h2>
                     
                     <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Portfolio Links</h4>
-                        <p style="margin: 5px 0; font-size: 12px;">
-                            To add "Portfolio →" links in Navigation menus:
-                        </p>
-                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 11px; margin: 8px 0;">
-                            <strong>URL:</strong> #<br>
-                            <strong>Text:</strong> Portfolio →<br>
-                            <strong>CSS Classes:</strong> portfolio-link-auto
-                        </div>
-                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">
-                            The theme will automatically set the correct portfolio URL and styling.
-                        </p>
-                    </div>
-                    
-                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
                         <h4 style="margin: 0 0 10px 0; color: #0073aa;">Student URLs</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
                             <strong>URL Pattern:</strong>
@@ -435,11 +465,17 @@ function eportfolio_render_settings_page() {
                     </div>
                     
                     <div style="background: white; padding: 15px; border-radius: 4px;">
-                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Content Type Filtering</h4>
+                        <h4 style="margin: 0 0 10px 0; color: #0073aa;">Portfolio link</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
-                            For advanced filtering behavior, install the 
-                            <a href="<?php echo admin_url('plugin-install.php?s=code+snippets&tab=search'); ?>" target="_blank">Code Snippets plugin</a>
-                            and check the theme documentation for filter examples.
+                            When Portfolio Curation is enabled, add a "Portfolio →" link to a navigation menu manually:
+                        </p>
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-family: monospace; font-size: 11px; margin: 8px 0;">
+                            <strong>URL:</strong> #<br>
+                            <strong>Text:</strong> Portfolio →<br>
+                            <strong>CSS Classes:</strong> portfolio-link-auto
+                        </div>
+                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">
+                            The theme automatically resolves the correct portfolio URL for the logged-in student and hides the link when already on the portfolio page.
                         </p>
                     </div>
                 </div>
@@ -621,59 +657,6 @@ function eportfolio_render_settings_page() {
         </div>
         <?php endif; ?>
 
-        <!-- Features Tab -->
-        <?php if ($active_tab === 'features'): ?>
-        <div class="eportfolio-tab-content">
-            <div style="max-width: 700px;">
-                <div class="card" style="background: #f6ffed; border-left: 4px solid #52c41a;">
-                    <h2 style="margin-top: 0;">Portfolio Curation</h2>
-
-                    <p style="font-size: 13px; margin-bottom: 20px;">
-                        When enabled, each student gets a curated <strong>/portfolio/username/</strong> page alongside
-                        their full author archive. Students choose which submissions appear there — making
-                        portfolio-building a deliberate, reflective act rather than an automatic feed.
-                    </p>
-
-                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 12px; color: #444;">
-                        <strong>Enabled:</strong> Students see a portfolio privacy toggle on their dashboard; the
-                        <code>/portfolio/</code> URL is live and shows only student-selected posts. A Portfolio
-                        checkbox appears on each post in the editor.<br><br>
-                        <strong>Disabled (default):</strong> Students only have their author archive. No portfolio
-                        toggle or checkbox is shown. Clean and simple — ideal for process-focused courses.
-                    </div>
-
-                    <form method="post">
-                        <?php wp_nonce_field('features_action', 'features_nonce'); ?>
-                        <?php $portfolio_on = get_option('eportfolio_feature_portfolio', '0') === '1'; ?>
-
-                        <p>
-                            <label style="display: block; font-size: 16px; margin-bottom: 10px;">
-                                <input type="checkbox" name="feature_portfolio" value="1" <?php checked($portfolio_on); ?> />
-                                <strong>Enable Portfolio Curation</strong>
-                            </label>
-                        </p>
-
-                        <div style="background: #f0f0f1; padding: 12px; border-left: 4px solid <?php echo $portfolio_on ? '#00a32a' : '#646970'; ?>; margin: 15px 0;">
-                            <p style="margin: 0;">
-                                <strong>Current Status:
-                                    <?php if ($portfolio_on): ?>
-                                        <span style="color: #00a32a;">&#10003; Enabled</span>
-                                    <?php else: ?>
-                                        <span style="color: #646970;">&mdash; Disabled</span>
-                                    <?php endif; ?>
-                                </strong>
-                            </p>
-                        </div>
-
-                        <p style="margin-top: 20px;">
-                            <input type="submit" name="save_features" class="button button-primary button-large" value="Save Feature Settings" />
-                        </p>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <?php else: ?>
         <!-- Non-admin: show portfolio settings or just archive URL depending on feature flag -->
         <?php if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) : ?>
@@ -683,12 +666,13 @@ function eportfolio_render_settings_page() {
             <form method="post">
                 <?php wp_nonce_field('portfolio_toggle_action', 'portfolio_toggle_nonce'); ?>
 
-                <p>
-                    <label style="display: block; font-size: 16px; margin-bottom: 10px;">
+                <div class="eportfolio-toggle-wrap">
+                    <label class="eportfolio-toggle">
                         <input type="checkbox" name="portfolio_is_public" value="1" <?php checked($is_public, '1'); ?> />
-                        <strong>Make my portfolio publicly accessible</strong>
+                        <span class="slider"></span>
                     </label>
-                </p>
+                    <strong style="font-size: 15px;">Make my portfolio publicly accessible</strong>
+                </div>
 
                 <div style="background: #f0f0f1; padding: 15px; border-left: 4px solid <?php echo ($is_public === '1') ? '#00a32a' : '#dba617'; ?>; margin: 15px 0;">
                     <p style="margin: 0;">

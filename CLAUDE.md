@@ -3,7 +3,7 @@
 ## Overview
 
 **Theme**: `eportfolio-theme-2`
-**Version**: 2.5.0
+**Version**: 2.6.0
 **Type**: Child theme of Twenty Twenty-Five (FSE/block theme)
 **Environment**: MAMP multisite, local development
 **Purpose**: ePortfolio platform for courses — students submit weekly reflections via frontend forms; instructors review; students have a curated portfolio view and a full archive view. Students can also create open posts via a simplified admin interface.
@@ -27,7 +27,7 @@ On both `/author/username/` and `/portfolio/username/`, the main query shows 1 p
 ### Privacy system
 - Site-wide toggle: `eportfolio_site_is_public` option
 - Per-portfolio toggle: `portfolio_is_public` user meta (student-controlled via ePortfolio dashboard)
-- Per-submission privacy set by ACF field on the source page (publish / private / pending)
+- Per-submission privacy set by plugin post meta on the source page (publish / private / pending)
 - `inc/privacy-logic.php` strips query strings before URL matching so `?show=POST_ID` requests pass through correctly for non-logged-in users
 
 ### Portfolio Curation feature flag
@@ -35,13 +35,13 @@ On both `/author/username/` and `/portfolio/username/`, the main query shows 1 p
 - **Off**: students only have their author archive; no portfolio metabox on posts; student dashboard shows archive URL only
 - **On**: portfolio checkbox on posts; student sees public/private toggle + both URLs on dashboard; `/portfolio/` URL is active
 - Submissions **never** auto-push to portfolio — `_is_public_portfolio` is always `'0'` on submit; students opt-in manually
-- Toggled from ePortfolio → Features tab (admin only)
+- Toggled from ePortfolio → Privacy Settings tab (admin only, left column)
 
 ### Taxonomy
 - `content-type` (custom, hierarchical, `show_in_rest: true`)
 - Always active regardless of feature flags
 - Registered in `functions.php` with a `taxonomy_exists()` guard (safe to coexist with ePortfoliohub)
-- Reflection submissions auto-tagged `Reflection` by default (overridable per page via ACF `content_type_label` field)
+- Reflection submissions auto-tagged `Reflection` by default (overridable per page via plugin `content_type_label` meta field)
 - Open posts can be tagged with any existing content-type terms via the New Post form
 
 ---
@@ -52,10 +52,10 @@ On both `/author/username/` and `/portfolio/username/`, the main query shows 1 p
 |---|---|
 | `style.css` | Theme registration header (Theme Name, Text Domain, Version) |
 | `functions.php` | Module loader + inline hooks (taxonomy, author query, post-title link rewrite, query loop scoping, JS fetch interceptor) |
-| `inc/acf-fields.php` | ACF field group registration for reflection pages |
-| `inc/reflection-form.php` | `[reflection_form]` shortcode + `init` submission handler |
-| `inc/post-form.php` | Simplified "New Post" admin subpage for students (section-based builder) |
-| `inc/admin-menu.php` | Student dashboard + Submissions / Features tabs; "Reflection Page" toolbar shortcut |
+| `inc/acf-fields.php` | **Stub only** — no longer loaded; ACF fully removed from theme |
+| `inc/reflection-form.php` | **Stub only** — owned by reflection-submissions plugin |
+| `inc/post-form.php` | **Stub only** — owned by reflection-submissions plugin |
+| `inc/admin-menu.php` | Student dashboard + Privacy / Submissions tabs; "Reflection Page" toolbar shortcut |
 | `inc/template-filters.php` | Swaps `author` template → `archive` template on front-end (WP 6.7+ fix) |
 | `inc/rewrite-rules.php` | `/portfolio/username/` rewrite rules + `portfolio_view` query var |
 | `inc/privacy-logic.php` | Public/private visibility enforcement |
@@ -142,20 +142,20 @@ add_action( 'admin_bar_menu',        'eportfolio_redirect_toolbar_new_post', 999
 
 ---
 
-## ACF Fields (registered in inc/acf-fields.php)
+## Reflection Page Fields (owned by reflection-submissions plugin)
 
-All fields appear on Pages when `is_reflection_page` toggle is ON.
+All fields are stored as standard post meta on reflection pages (no ACF required).
 
-| Field key | Type | Purpose |
+| Meta key | Type | Purpose |
 |---|---|---|
-| `is_reflection_page` | true/false | Master toggle — enables all reflection fields |
-| `reflection_prompt_1` | textarea | Required prompt (shown when toggle ON) |
-| `reflection_prompt_2` | textarea | Optional second prompt |
-| `reflection_prompt_3` | textarea | Optional third prompt |
-| `submission_privacy` | select | Post status: publish / private / pending |
-| `allow_image_upload` | true/false | Enables file input → sets featured image |
-| `allow_video_url` | true/false | Enables URL input → oEmbed in post content |
-| `allow_embed` | true/false | Enables iframe textarea (Kaltura etc.) |
+| `is_reflection_page` | true/false | Master toggle — enables reflection form on the page |
+| `reflection_prompt_1` | text | Required prompt |
+| `reflection_prompt_2` | text | Optional second prompt |
+| `reflection_prompt_3` | text | Optional third prompt |
+| `submission_privacy` | select | Post status for submissions: publish / private / pending |
+| `allow_image_upload` | true/false | Enables image upload on the form |
+| `allow_video_url` | true/false | Enables video URL field (oEmbed) |
+| `allow_embed` | true/false | Enables iframe embed field (Kaltura etc.) |
 | `allow_resubmission` | true/false | Disables duplicate guard when ON |
 | `content_type_label` | text | Term name for content-type taxonomy (default: "Reflection") |
 
@@ -175,17 +175,20 @@ All fields appear on Pages when `is_reflection_page` toggle is ON.
 
 ## Admin Panel (inc/admin-menu.php)
 
-**Tabs (admin only)**: Privacy Settings | Menu Builder Guide | Advanced | Submissions | Features
+**Tabs (admin only)**: Privacy Settings | Menu Builder Guide | Advanced | Submissions
+
+**Privacy tab — left column** (admin only):
+- Global Site Privacy toggle (site-wide public/private)
+- Portfolio Curation toggle (enable/disable `eportfolio_feature_portfolio`)
+- Home Page Link (custom URL for "Back" links)
 
 **Privacy tab — right column** (conditional):
 - Portfolio feature ON: public/private toggle + portfolio URL + archive URL
-- Portfolio feature OFF: archive URL only, link to Features tab to enable
-
-**Features tab**: checkbox to enable/disable Portfolio Curation (`eportfolio_feature_portfolio`)
+- Portfolio feature OFF: archive URL only, link to Privacy Settings to enable
 
 **Submissions tab**: lists all posts with `_reflection_source_page` meta; filter by status; Approve / Trash actions
 
-**"+ New > Reflection Page"** in admin toolbar (admins only): creates a draft page with `[reflection_form]` shortcode baked in and sensible ACF defaults
+**"+ New > Reflection Page"** in admin toolbar (admins only): creates a draft page with `[reflection_form]` shortcode baked in and default plugin meta values
 
 **Non-admin (student) dashboard**: shows portfolio privacy toggle (feature ON) or archive URL only (feature OFF)
 
@@ -224,7 +227,7 @@ Hardcoded directly into `templates/archive.html` and `templates/author.html` on 
 - **Edit in simple form**: parse `wp:paragraph`, `wp:image`, `wp:gallery`, `wp:embed` blocks back into section objects on load. Doable with regex since markup is our own predictable format.
 - **Multiple content types in archive**: each content type needs its own `<details>` + Query Loop in the archive template. Consider a PHP shortcode that auto-generates all sections dynamically.
 - **Email notifications**: no email sent on pending reflection submission. Do instructors need one?
-- **Multisite replication**: first production deploy pending — theme + ACF field setup transfer to new subsites not yet tested in production.
+- **Multisite replication**: first production deploy pending — term ID remapping needs real-world verification on fresh subsites.
 - **Frontend polish**: `<details>` accordion has no custom CSS. New Post form CSS is functional but basic.
 - **ePortfoliohub coexistence**: `content-type` taxonomy registered in both themes with a guard. Long-term this theme should be fully self-contained.
 - **Additional default content-type terms**: currently only "Reflection" is seeded on activation. If other terms (e.g. "Project", "Lab Report") become standard, add them to `eportfolio_seed_default_terms()` in `functions.php`.
