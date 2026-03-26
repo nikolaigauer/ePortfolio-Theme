@@ -441,9 +441,7 @@ function eportfolio_render_settings_page() {
                         <h4 style="margin: 0 0 8px 0; color: #fa8c16;">🏷️ Content Types</h4>
                         <p style="margin: 0 0 10px 0; font-size: 12px;">
                             One link per content-type term (filters the archive by type).
-                            <?php if ($portfolio_on): ?>
-                                Includes a <strong>Portfolio →</strong> link at the end.
-                            <?php endif; ?>
+                            Always includes a <strong>Portfolio →</strong> link — shown automatically when Portfolio Curation is enabled, hidden when disabled.
                             <?php if ($ct_menu): ?>
                                 <br><span style="color: #00a32a; font-size: 11px;">&#10003; Menu exists (<?php echo esc_html(count(wp_get_nav_menu_items($ct_menu->term_id) ?: array())); ?> items)</span>
                             <?php else: ?>
@@ -457,11 +455,9 @@ function eportfolio_render_settings_page() {
                                 <?php echo esc_html($term->name); ?>
                             </span>
                             <?php endforeach; ?>
-                            <?php if ($portfolio_on): ?>
-                            <span style="display: inline-block; background: #d5f4e6; border: 1px solid #8ecbad; border-radius: 3px; padding: 2px 8px; font-size: 11px; margin: 2px;">
-                                Portfolio →
+                            <span style="display: inline-block; background: <?php echo $portfolio_on ? '#d5f4e6' : '#f0f0f1'; ?>; border: 1px solid <?php echo $portfolio_on ? '#8ecbad' : '#ccc'; ?>; border-radius: 3px; padding: 2px 8px; font-size: 11px; margin: 2px; color: <?php echo $portfolio_on ? 'inherit' : '#999'; ?>;">
+                                Portfolio → <?php echo $portfolio_on ? '' : '(hidden)'; ?>
                             </span>
-                            <?php endif; ?>
                         </div>
                         <form method="post" style="margin: 0;">
                             <?php wp_nonce_field('student_menu_action', 'student_menu_nonce'); ?>
@@ -864,14 +860,15 @@ function eportfolio_create_content_type_menu() {
         ) );
     }
 
-    if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
-        wp_update_nav_menu_item( $menu_id, 0, array(
-            'menu-item-title'   => 'Portfolio →',
-            'menu-item-url'     => '#',
-            'menu-item-status'  => 'publish',
-            'menu-item-classes' => array( 'portfolio-link-auto' ),
-        ) );
-    }
+    // Always add the Portfolio link — visibility is controlled at render time
+    // by the wp_nav_menu_objects filter in portfolio-link.php, so toggling
+    // Portfolio Curation never requires regenerating this menu.
+    wp_update_nav_menu_item( $menu_id, 0, array(
+        'menu-item-title'   => 'Portfolio →',
+        'menu-item-url'     => '#',
+        'menu-item-status'  => 'publish',
+        'menu-item-classes' => 'portfolio-link-auto',
+    ) );
 
     return true;
 }

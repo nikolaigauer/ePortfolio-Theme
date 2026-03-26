@@ -114,3 +114,18 @@ function eportfolio_add_portfolio_link_script() {
     <?php
 }
 add_action('wp_footer', 'eportfolio_add_portfolio_link_script');
+
+/**
+ * Hide portfolio-link-auto nav items when Portfolio Curation is disabled.
+ * Runs on every menu render so toggling the feature flag takes effect immediately
+ * without needing to regenerate the Content Types menu.
+ */
+add_filter('wp_nav_menu_objects', 'eportfolio_filter_portfolio_nav_item');
+function eportfolio_filter_portfolio_nav_item( $items ) {
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
+        return $items;
+    }
+    return array_values( array_filter( $items, function( $item ) {
+        return ! in_array( 'portfolio-link-auto', (array) $item->classes, true );
+    } ) );
+}
