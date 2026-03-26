@@ -771,14 +771,28 @@ function eportfolio_render_settings_page() {
 /**
  * Clear all items from a nav menu without deleting the menu itself.
  * Preserves the menu's term ID so Navigation block assignments remain intact.
+ *
+ * Uses get_posts with a tax_query instead of wp_get_nav_menu_items to bypass
+ * the internal nav menu cache, which causes stale results on repeated runs.
  */
 function eportfolio_clear_nav_menu_items( $menu_id ) {
-    $items = wp_get_nav_menu_items( $menu_id, array( 'post_status' => 'any' ) );
-    if ( ! empty( $items ) ) {
-        foreach ( $items as $item ) {
-            wp_delete_post( $item->ID, true );
-        }
+    $item_ids = get_posts( array(
+        'post_type'      => 'nav_menu_item',
+        'post_status'    => 'any',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+        'tax_query'      => array(
+            array(
+                'taxonomy' => 'nav_menu',
+                'field'    => 'term_id',
+                'terms'    => intval( $menu_id ),
+            ),
+        ),
+    ) );
+    foreach ( (array) $item_ids as $item_id ) {
+        wp_delete_post( (int) $item_id, true );
     }
+    wp_cache_delete( $menu_id, 'nav_menu_items' );
 }
 
 /**
