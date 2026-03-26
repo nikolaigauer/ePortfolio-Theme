@@ -91,9 +91,19 @@ function eportfolio_render_settings_page() {
     if ($is_admin && isset($_POST['create_student_menu']) && check_admin_referer('student_menu_action', 'student_menu_nonce')) {
         $result = eportfolio_create_student_author_menu();
         if ($result) {
-            echo '<div class="notice notice-success is-dismissible"><p><strong>Student navigation menu created/updated!</strong> You can now add it to your templates via the Navigation block.</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Student Authors menu updated!</strong> Assign it to a Navigation block in the Site Editor.</p></div>';
         } else {
-            echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> Could not create student menu. Please try again.</p></div>';
+            echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> Could not update student menu. No users with Author role found.</p></div>';
+        }
+    }
+
+    // Handle content type menu generation (admin only)
+    if ($is_admin && isset($_POST['create_content_type_menu']) && check_admin_referer('student_menu_action', 'student_menu_nonce')) {
+        $result = eportfolio_create_content_type_menu();
+        if ($result) {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Content Types menu updated!</strong> Assign it to a Navigation block in the Site Editor.</p></div>';
+        } else {
+            echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> Could not create Content Types menu. Make sure content-type terms exist.</p></div>';
         }
     }
     
@@ -370,78 +380,98 @@ function eportfolio_render_settings_page() {
                     </div>
                 </div>
                 
-                <!-- Student Menu Generator (Middle) -->
+                <!-- Menu Generators (Middle) -->
                 <div class="card" style="background: #fff7e6; border-left: 4px solid #fa8c16;">
-                    <h2 style="margin-top: 0;">👥 Student Menu Generator</h2>
-                    
+                    <h2 style="margin-top: 0;">⚙️ Menu Generators</h2>
+
                     <p class="description" style="margin-bottom: 15px; font-size: 12px;">
-                        Quick utility: Generate a "Student Authors" menu with all student links
+                        Each button creates the menu once and <strong>updates it in place</strong> on subsequent runs —
+                        the same menu ID is preserved so your Navigation block assignments stay intact.
                     </p>
-                    
-                    <form method="post">
-                        <?php wp_nonce_field('student_menu_action', 'student_menu_nonce'); ?>
-                        
-                        <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                            <h4 style="margin: 0 0 10px 0; color: #fa8c16;">Quick Setup</h4>
-                            <p style="margin: 5px 0; font-size: 12px;">
-                                Creates a flat menu called "Student Authors" with links to all author pages.
-                            </p>
-                            
-                            <p style="margin-top: 15px;">
-                                <input type="submit" name="create_student_menu" class="button button-primary button-large" value="Generate Student Menu" />
-                            </p>
-                            
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: #666;">
-                                <strong>Note:</strong> Creates a flat menu. Organize and style manually after generation.
-                            </p>
-                        </div>
-                    </form>
-                    
-                    <?php 
+
+                    <?php
                     $current_author_slug = get_option('eportfolio_author_slug', 'author');
                     $authors = get_users(array(
-                        'role' => 'author',
+                        'role'    => 'author',
                         'blog_id' => get_current_blog_id(),
-                        'orderby' => 'display_name'
+                        'orderby' => 'display_name',
                     ));
+                    $ct_terms = get_terms(array('taxonomy' => 'content-type', 'hide_empty' => false));
+                    $student_menu   = wp_get_nav_menu_object('Student Authors');
+                    $ct_menu        = wp_get_nav_menu_object('Content Types');
                     ?>
-                    
-                    <div style="background: white; padding: 15px; border-radius: 4px;">
-                        <h4 style="margin: 0 0 10px 0; color: #fa8c16;">Current Students</h4>
-                        
-                        <?php if (!empty($authors)): ?>
-                        <p style="margin: 5px 0; font-size: 12px;">
-                            <strong><?php echo count($authors); ?> students</strong> with Author role:
+
+                    <!-- Student Authors generator -->
+                    <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 8px 0; color: #fa8c16;">👥 Student Authors</h4>
+                        <p style="margin: 0 0 10px 0; font-size: 12px;">
+                            One link per student (Author role) → their archive page.
+                            <?php if ($student_menu): ?>
+                                <br><span style="color: #00a32a; font-size: 11px;">&#10003; Menu exists (<?php echo esc_html(count(wp_get_nav_menu_items($student_menu->term_id) ?: array())); ?> items)</span>
+                            <?php else: ?>
+                                <br><span style="color: #646970; font-size: 11px;">Not yet generated.</span>
+                            <?php endif; ?>
                         </p>
-                        
-                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 3px;">
-                            <?php foreach ($authors as $author): 
-                                $author_url = str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($author->ID));
-                                $post_count = count_user_posts($author->ID, 'post', true);
+                        <form method="post" style="margin: 0;">
+                            <?php wp_nonce_field('student_menu_action', 'student_menu_nonce'); ?>
+                            <input type="submit" name="create_student_menu" class="button button-primary"
+                                   value="<?php echo $student_menu ? 'Update Student Authors Menu' : 'Generate Student Authors Menu'; ?>" />
+                        </form>
+                        <?php if (!empty($authors)): ?>
+                        <div style="max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 3px; margin-top: 10px;">
+                            <?php foreach ($authors as $author):
+                                $author_url  = str_replace('/author/', '/' . $current_author_slug . '/', get_author_posts_url($author->ID));
+                                $post_count  = count_user_posts($author->ID, 'post', true);
                             ?>
-                            <div style="padding: 8px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                                <div>
-                                    <strong><?php echo esc_html($author->display_name); ?></strong>
-                                    <br><small style="color: #666;"><?php echo $post_count; ?> posts</small>
-                                </div>
-                                <div style="text-align: right;">
-                                    <a href="<?php echo esc_url($author_url); ?>" target="_blank" 
-                                       style="font-family: monospace; color: #0073aa; text-decoration: none; font-size: 9px; display: block;"
-                                       title="<?php echo esc_attr($author_url); ?>">
-                                        /<?php echo $current_author_slug; ?>/<?php echo esc_html($author->user_nicename); ?>
-                                    </a>
-                                    <button type="button" class="button button-small" 
-                                            onclick="navigator.clipboard.writeText('<?php echo esc_js($author_url); ?>'); this.innerText='✓'; setTimeout(() => this.innerText='Copy', 1500);" 
-                                            style="margin-top: 2px; font-size: 9px; padding: 2px 6px;">
-                                        Copy
-                                    </button>
-                                </div>
+                            <div style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                                <span><strong><?php echo esc_html($author->display_name); ?></strong> <span style="color:#999;">(<?php echo $post_count; ?>)</span></span>
+                                <button type="button" class="button button-small"
+                                        onclick="navigator.clipboard.writeText('<?php echo esc_js($author_url); ?>'); this.innerText='✓'; setTimeout(() => this.innerText='Copy', 1500);"
+                                        style="font-size: 9px; padding: 1px 6px;">Copy</button>
                             </div>
                             <?php endforeach; ?>
                         </div>
-                        
                         <?php else: ?>
-                        <p style="color: #d63638; font-style: italic; font-size: 12px;">No users with Author role found.</p>
+                        <p style="color: #d63638; font-size: 11px; margin: 8px 0 0 0; font-style: italic;">No users with Author role found.</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Content Types generator -->
+                    <div style="background: white; padding: 15px; border-radius: 4px;">
+                        <h4 style="margin: 0 0 8px 0; color: #fa8c16;">🏷️ Content Types</h4>
+                        <p style="margin: 0 0 10px 0; font-size: 12px;">
+                            One link per content-type term (filters the archive by type).
+                            <?php if ($portfolio_on): ?>
+                                Includes a <strong>Portfolio →</strong> link at the end.
+                            <?php endif; ?>
+                            <?php if ($ct_menu): ?>
+                                <br><span style="color: #00a32a; font-size: 11px;">&#10003; Menu exists (<?php echo esc_html(count(wp_get_nav_menu_items($ct_menu->term_id) ?: array())); ?> items)</span>
+                            <?php else: ?>
+                                <br><span style="color: #646970; font-size: 11px;">Not yet generated.</span>
+                            <?php endif; ?>
+                        </p>
+                        <?php if (!empty($ct_terms) && !is_wp_error($ct_terms)): ?>
+                        <div style="margin-bottom: 10px;">
+                            <?php foreach ($ct_terms as $term): ?>
+                            <span style="display: inline-block; background: #f0f6fc; border: 1px solid #c5d9ed; border-radius: 3px; padding: 2px 8px; font-size: 11px; margin: 2px;">
+                                <?php echo esc_html($term->name); ?>
+                            </span>
+                            <?php endforeach; ?>
+                            <?php if ($portfolio_on): ?>
+                            <span style="display: inline-block; background: #d5f4e6; border: 1px solid #8ecbad; border-radius: 3px; padding: 2px 8px; font-size: 11px; margin: 2px;">
+                                Portfolio →
+                            </span>
+                            <?php endif; ?>
+                        </div>
+                        <form method="post" style="margin: 0;">
+                            <?php wp_nonce_field('student_menu_action', 'student_menu_nonce'); ?>
+                            <input type="submit" name="create_content_type_menu" class="button button-primary"
+                                   value="<?php echo $ct_menu ? 'Update Content Types Menu' : 'Generate Content Types Menu'; ?>" />
+                        </form>
+                        <?php else: ?>
+                        <p style="color: #646970; font-size: 11px; font-style: italic; margin: 0;">
+                            No content-type terms found. Add terms under <strong>Posts → Content Types</strong> first.
+                        </p>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -743,48 +773,106 @@ function eportfolio_render_settings_page() {
 }
 
 /**
- * Create student author navigation menu
- * Generates a flat menu with all authors (no auto-grouping)
+ * Clear all items from a nav menu without deleting the menu itself.
+ * Preserves the menu's term ID so Navigation block assignments remain intact.
+ */
+function eportfolio_clear_nav_menu_items( $menu_id ) {
+    $items = wp_get_nav_menu_items( $menu_id, array( 'post_status' => 'any' ) );
+    if ( ! empty( $items ) ) {
+        foreach ( $items as $item ) {
+            wp_delete_post( $item->ID, true );
+        }
+    }
+}
+
+/**
+ * Create or update the "Student Authors" navigation menu.
+ * Updates in place on subsequent runs — menu ID is never changed.
  */
 function eportfolio_create_student_author_menu() {
-    // Delete existing student menu if it exists
-    $existing_menu = wp_get_nav_menu_object('Student Authors');
-    if ($existing_menu) {
-        wp_delete_nav_menu($existing_menu->term_id);
+    $menu_name = 'Student Authors';
+    $existing  = wp_get_nav_menu_object( $menu_name );
+
+    if ( $existing ) {
+        $menu_id = $existing->term_id;
+        eportfolio_clear_nav_menu_items( $menu_id );
+    } else {
+        $menu_id = wp_create_nav_menu( $menu_name );
+        if ( is_wp_error( $menu_id ) ) {
+            return false;
+        }
     }
-    
-    // Create new menu
-    $menu_id = wp_create_nav_menu('Student Authors');
-    
-    if (is_wp_error($menu_id)) {
-        return false;
-    }
-    
-    // Get all authors
-    $authors = get_users(array(
-        'role' => 'author',
+
+    $authors = get_users( array(
+        'role'    => 'author',
         'blog_id' => get_current_blog_id(),
-        'orderby' => 'display_name'
-    ));
-    
-    if (empty($authors)) {
+        'orderby' => 'display_name',
+    ) );
+
+    if ( empty( $authors ) ) {
         return false;
     }
-    
-    // Get custom author slug
-    $author_slug = get_option('eportfolio_author_slug', 'author');
-    
-    // Add all authors as flat menu items
-    foreach ($authors as $author) {
-        $author_url = str_replace('/author/', '/' . $author_slug . '/', get_author_posts_url($author->ID));
-        
-        wp_update_nav_menu_item($menu_id, 0, array(
-            'menu-item-title' => $author->display_name,
-            'menu-item-url' => $author_url,
-            'menu-item-status' => 'publish'
-        ));
+
+    $author_slug = get_option( 'eportfolio_author_slug', 'author' );
+
+    foreach ( $authors as $author ) {
+        $author_url = str_replace( '/author/', '/' . $author_slug . '/', get_author_posts_url( $author->ID ) );
+        wp_update_nav_menu_item( $menu_id, 0, array(
+            'menu-item-title'  => $author->display_name,
+            'menu-item-url'    => $author_url,
+            'menu-item-status' => 'publish',
+        ) );
     }
-    
+
+    return true;
+}
+
+/**
+ * Create or update the "Content Types" navigation menu.
+ * One item per content-type term (URL: ?content-type=slug — relative, works on
+ * any author archive page). Appends a Portfolio → item when curation is enabled.
+ * Updates in place on subsequent runs — menu ID is never changed.
+ */
+function eportfolio_create_content_type_menu() {
+    $menu_name = 'Content Types';
+    $existing  = wp_get_nav_menu_object( $menu_name );
+
+    if ( $existing ) {
+        $menu_id = $existing->term_id;
+        eportfolio_clear_nav_menu_items( $menu_id );
+    } else {
+        $menu_id = wp_create_nav_menu( $menu_name );
+        if ( is_wp_error( $menu_id ) ) {
+            return false;
+        }
+    }
+
+    $terms = get_terms( array(
+        'taxonomy'   => 'content-type',
+        'hide_empty' => false,
+    ) );
+
+    if ( empty( $terms ) || is_wp_error( $terms ) ) {
+        return false;
+    }
+
+    foreach ( $terms as $term ) {
+        wp_update_nav_menu_item( $menu_id, 0, array(
+            'menu-item-title'  => $term->name,
+            'menu-item-url'    => '?content-type=' . $term->slug,
+            'menu-item-status' => 'publish',
+        ) );
+    }
+
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
+        wp_update_nav_menu_item( $menu_id, 0, array(
+            'menu-item-title'   => 'Portfolio →',
+            'menu-item-url'     => '#',
+            'menu-item-status'  => 'publish',
+            'menu-item-classes' => array( 'portfolio-link-auto' ),
+        ) );
+    }
+
     return true;
 }
 
