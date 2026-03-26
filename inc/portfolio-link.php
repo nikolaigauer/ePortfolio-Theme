@@ -117,12 +117,17 @@ add_action('wp_footer', 'eportfolio_add_portfolio_link_script');
 
 /**
  * Hide portfolio-link-auto nav items when Portfolio Curation is disabled.
- * Runs on every menu render so toggling the feature flag takes effect immediately
- * without needing to regenerate the Content Types menu.
+ *
+ * Uses wp_get_nav_menu_items (not wp_nav_menu_objects) so it fires for both
+ * the FSE Navigation block and classic wp_nav_menu() calls. By this point
+ * wp_setup_nav_menu_item() has run and $item->classes is already an array.
  */
-add_filter('wp_nav_menu_objects', 'eportfolio_filter_portfolio_nav_item');
-function eportfolio_filter_portfolio_nav_item( $items ) {
+add_filter( 'wp_get_nav_menu_items', 'eportfolio_filter_portfolio_nav_item', 10, 3 );
+function eportfolio_filter_portfolio_nav_item( $items, $menu, $args ) {
     if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
+        return $items;
+    }
+    if ( ! is_array( $items ) ) {
         return $items;
     }
     return array_values( array_filter( $items, function( $item ) {
