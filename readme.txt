@@ -1,6 +1,6 @@
-== ePortfolio Theme ==
+== ePortfolio Theme 2 ==
 
-Contributors: 
+Contributors: nikolaigauer
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 7.4
@@ -10,17 +10,27 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 == Changelog ==
 
-= 2.3.1 =
-* Code quality improvements and cleanup
-* Fixed version consistency across theme files
-* Template optimization
-* Enhanced security and performance
+= 2.6.0 =
+* Move Portfolio Curation to Privacy Settings tab
+* Replace checkbox toggles with toggle switches
+* Remove all ACF dependencies from theme
+
+= 2.5.0 =
+* Add student New Post form (section-based builder)
+* Add content-type taxonomy with runtime term ID remapping
+* Add ?show=POST_ID fetch-based navigation with <details> persistence
+
+= 2.4.0 =
+* Add portfolio curation feature flag
+* Add per-student privacy controls
+* Add /portfolio/username/ rewrite rules
 
 = 2.3.0 =
-* Major portfolio template breakthrough + enhanced security
+* Major template system overhaul
+* Full block editor control for portfolio pages
 
 = 2.2.0 =
-* Streamline theme for ACF integration
+* Implemented hierarchical privacy system
 
 = 2.0.1 =
 * Remove auto-updater and fix theme URIs
@@ -31,8 +41,8 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 == Copyright ==
 
-ePortfolio Theme WordPress Theme, (C) 2025 
-ePortfolio Theme is distributed under the terms of the GNU GPL.
+ePortfolio Theme 2, Copyright (C) 2026 Nikolai Gauer
+ePortfolio Theme 2 is distributed under the terms of the GNU GPL.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -45,5 +55,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 
-ePortfolio Theme is a child theme of Twenty Twenty-Five (https://wordpress.org/themes/twentytwentyfive/), (C) the WordPress team, [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)
-
+ePortfolio Theme 2 is a child theme of Twenty Twenty-Five (https://wordpress.org/themes/twentytwentyfive/), (C) the WordPress team, GPLv2 or later (http://www.gnu.org/licenses/gpl-2.0.html)
