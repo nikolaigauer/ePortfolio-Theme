@@ -114,3 +114,34 @@ function eportfolio_add_portfolio_link_script() {
     <?php
 }
 add_action('wp_footer', 'eportfolio_add_portfolio_link_script');
+
+/**
+ * Hide portfolio-link-auto nav items when Portfolio Curation is disabled.
+ *
+ * Two-layer approach:
+ * 1. wp_get_nav_menu_items filter — strips the item from classic menu rendering.
+ * 2. wp_head CSS — hides any item that reaches the DOM anyway (FSE Navigation
+ *    blocks can render via wp_navigation post content, bypassing the PHP filter).
+ */
+add_filter( 'wp_get_nav_menu_items', 'eportfolio_filter_portfolio_nav_item', 10, 3 );
+function eportfolio_filter_portfolio_nav_item( $items, $menu, $args ) {
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
+        return $items;
+    }
+    if ( ! is_array( $items ) ) {
+        return $items;
+    }
+    return array_values( array_filter( $items, function( $item ) {
+        return ! in_array( 'portfolio-link-auto', (array) $item->classes, true );
+    } ) );
+}
+
+add_action( 'wp_head', 'eportfolio_portfolio_link_visibility_css' );
+function eportfolio_portfolio_link_visibility_css() {
+    if ( get_option( 'eportfolio_feature_portfolio', '0' ) === '1' ) {
+        return;
+    }
+    echo '<style id="eportfolio-portfolio-link-hide">'
+       . '.portfolio-link-auto, li:has(> .portfolio-link-auto) { display: none !important; }'
+       . '</style>' . "\n";
+}

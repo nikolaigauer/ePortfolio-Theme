@@ -90,36 +90,65 @@ function eportfolio_get_portfolio_count($user_id) {
 }
 
 /**
- * Template domino effect: author pages use archive template
- * This allows portfolio (which uses author template) -> author -> archive
+ * Serve the archive template when viewing a regular author page (non-portfolio).
+ *
+ * WHY get_block_template (singular) and not get_block_templates (plural):
+ * WordPress 6.7+ resolves FSE page templates via WP_Block_Templates_Registry +
+ * get_block_template(), which bypasses the get_block_templates filter entirely.
+ * The plural filter still fires in the Site Editor (hence it looked correct there)
+ * but never fired during actual front-end rendering. The singular filter fires
+ * as the final step of every individual template lookup, reliably across all
+ * WP versions since 5.9.
  */
-add_filter('get_block_templates', 'eportfolio_author_to_archive_template', 10, 3);
-function eportfolio_author_to_archive_template($query_result, $query, $template_type) {
-    // Only redirect regular author pages (not portfolio views) to archive template
-    if (!get_query_var('portfolio_view') && is_author()) {
-        
-        foreach ($query_result as $key => $template) {
-            if ($template->slug === 'author') {
-                // Look for archive template
-                $archive_template_file = get_stylesheet_directory() . '/templates/archive.html';
-                
-                if (file_exists($archive_template_file)) {
-                    // Create archive template object
-                    $archive_template = clone $template;
-                    $archive_template->slug = 'archive';
-                    $archive_template->id = get_stylesheet() . '//archive';
-                    $archive_template->title = 'Archive';
-                    $archive_template->content = file_get_contents($archive_template_file);
-                    
-                    // Replace author template with archive template
-                    $query_result[$key] = $archive_template;
-                }
-                break;
-            }
+add_filter('get_block_template', 'eportfolio_author_to_archive_template', 10, 3);
+function eportfolio_author_to_archive_template($block_template, $id, $template_type) {
+
+    // Only care about page templates
+    if ($template_type !== 'wp_template') {
+        return $block_template;
+    }
+
+    // Must have a resolved template and it must be the author template
+    if (!$block_template || $block_template->slug !== 'author') {
+        return $block_template;
+    }
+
+    // Only swap on regular author pages — not portfolio views
+    if (!is_author() || get_query_var('portfolio_view')) {
+        return $block_template;
+    }
+
+    // Prefer a DB-saved (site-editor-customised) archive template for this theme
+    $customized = get_posts(array(
+        'post_type'      => 'wp_template',
+        'post_status'    => 'publish',
+        'name'           => 'archive',
+        'posts_per_page' => 1,
+        'tax_query'      => array(
+            array(
+                'taxonomy' => 'wp_theme',
+                'field'    => 'slug',
+                'terms'    => get_stylesheet(),
+            ),
+        ),
+    ));
+
+    $swapped          = clone $block_template;
+    $swapped->slug    = 'archive';
+    $swapped->id      = get_stylesheet() . '//archive';
+    $swapped->title   = 'Archive';
+
+    if (!empty($customized)) {
+        $swapped->content = $customized[0]->post_content;
+        $swapped->source  = 'custom';
+    } else {
+        $archive_file = get_stylesheet_directory() . '/templates/archive.html';
+        if (file_exists($archive_file)) {
+            $swapped->content = file_get_contents($archive_file);
         }
     }
-    
-    return $query_result;
+
+    return $swapped;
 }
 
 /**
