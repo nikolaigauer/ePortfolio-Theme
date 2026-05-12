@@ -211,17 +211,14 @@ function eportfolio_rewrite_post_title_for_show( $block_content, $block, $instan
 }
 
 /**
- * Rewrite hardcoded content-type term IDs in Query Loop blocks to live IDs.
+ * Validate content-type term IDs in Query Loop blocks.
  *
- * Block templates store term IDs, which are site-specific and won't transfer
- * between subsites. This filter runs after WP has built the WP_Query args from
- * the block's taxQuery attribute, so we can safely swap in the correct IDs for
- * the current site without re-rendering the block.
+ * Block templates store term IDs, which are site-specific. This filter strips
+ * any IDs that don't exist on the current site so stale template copies don't
+ * produce broken queries. When all IDs are valid they pass through unchanged.
  *
- * Logic: if a stored term ID is valid on this site, keep it (same ID, different
- * site is fine). If invalid and only one stored ID was given + only one term of
- * this taxonomy exists on the site, it's unambiguous — use that term. This
- * covers the standard single-term case (e.g. "Reflection" seeded on activation).
+ * To target a specific content type, configure the Query Loop block's taxonomy
+ * filter in Site Editor → Templates → Author and pick the desired term.
  */
 add_filter( 'query_loop_block_query_vars', 'eportfolio_fix_content_type_term_ids', 5, 2 );
 function eportfolio_fix_content_type_term_ids( $query, $block ) {
@@ -243,23 +240,7 @@ function eportfolio_fix_content_type_term_ids( $query, $block ) {
             }
         }
 
-        // Fallback for the common case: one stored ID that doesn't exist here,
-        // but only one content-type term exists on the site — must be the same term.
-        if ( empty( $live_ids ) && count( $stored_ids ) === 1 ) {
-            $all_ids = get_terms( array(
-                'taxonomy'   => 'content-type',
-                'hide_empty' => false,
-                'number'     => 2,
-                'fields'     => 'ids',
-            ) );
-            if ( ! is_wp_error( $all_ids ) && count( $all_ids ) === 1 ) {
-                $live_ids = array_map( 'intval', $all_ids );
-            }
-        }
-
-        if ( ! empty( $live_ids ) ) {
-            $clause['terms'] = $live_ids;
-        }
+        $clause['terms'] = $live_ids;
     }
 
     return $query;
@@ -292,28 +273,9 @@ function eportfolio_load_modules() {
 add_action('after_setup_theme', 'eportfolio_load_modules');
 
 /**
- * Seed default content-type terms so the taxonomy is usable out of the box.
- * Runs on activation and once on init (via option flag) for already-active installs.
- */
-function eportfolio_seed_default_terms() {
-    if ( ! taxonomy_exists( 'content-type' ) ) return;
-    if ( ! term_exists( 'reflection', 'content-type' ) ) {
-        wp_insert_term( 'Reflection', 'content-type', array( 'slug' => 'reflection' ) );
-    }
-}
-
-// One-time init seed for installs where the theme is already active
-add_action( 'init', function() {
-    if ( get_option( 'eportfolio_terms_seeded' ) ) return;
-    eportfolio_seed_default_terms();
-    update_option( 'eportfolio_terms_seeded', '1' );
-}, 2 ); // priority 2 — after taxonomy registration at priority 0
-
-/**
  * Flush rewrite rules on theme activation
  */
 function eportfolio_activate() {
-    eportfolio_seed_default_terms();
     flush_rewrite_rules();
 }
 add_action('after_switch_theme', 'eportfolio_activate');
