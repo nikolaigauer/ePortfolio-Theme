@@ -23,9 +23,9 @@ A WordPress FSE (Full Site Editor) block theme for university ePortfolio courses
 
 ## Optional Plugin
 
-Works standalone for portfolio/privacy/display. Reflection form submissions and the student New Post form require the companion plugin:
+Works standalone for portfolio/privacy/display. Use the companion plugin Activity Builder to insert prompt input forms and construct assignments in a custom easy-to-use activity builder:
 
-**[reflection-submissions](https://github.com/nikolaigauer/reflection-submissions)**
+**[Activity Builder](https://github.com/nikolaigauer/activity-builder)**
 
 ---
 
