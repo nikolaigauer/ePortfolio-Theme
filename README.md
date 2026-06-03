@@ -14,7 +14,7 @@ A WordPress FSE (Full Site Editor) block theme for university ePortfolio courses
 - **Dual view per student**: `/author/username/` (full archive) + `/portfolio/username/` (curated portfolio)
 - **Selectable layout per view**: each archive can be a **Feed** (scrolling) or **Single post at a time** — admin-set on the Advanced tab. Defaults: author = Feed, portfolio = Single.
 - **`?show=POST_ID` navigation**: in Single-post mode, fetch-based post browsing that keeps sidebar accordions open without full page reloads
-- **Content-type filter menu**: a generated menu (with an **All** link) that scopes filtering to the student being viewed — pairs with Feed mode for a filterable process archive
+- **Content-type filter menu**: a generated menu (with an **All** link) that scopes filtering to the student being viewed and only shows types that student has actually posted in — pairs with Feed mode for a filterable process archive
 - **Privacy controls**: site-wide toggle, per-student portfolio toggle, per-post visibility
 - **Portfolio curation**: feature-flagged — students opt posts in manually; nothing auto-publishes to their portfolio
 - **Content-type taxonomy**: hierarchical, block-editor-compatible; terms are created manually to suit each course's context

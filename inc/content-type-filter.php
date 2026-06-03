@@ -66,15 +66,80 @@ function eportfolio_content_type_filter_script() {
 }
 
 /**
- * Minimal styling hook for the active filter. Kept deliberately light so the
- * theme's own typography wins; instructors can override .current-content-type.
+ * Content-type slugs the currently-viewed author has actually published in.
+ *
+ * On /author/ this is any published post; on /portfolio/ it is narrowed to
+ * portfolio-public posts, so the filter set matches what the visitor can see.
+ * Counts the term itself only (no hierarchy descent). Returns slugs.
+ */
+function eportfolio_author_used_content_types() {
+    $author_id = (int) get_queried_object_id();
+    if ( ! $author_id ) {
+        return array();
+    }
+
+    $args = array(
+        'author'                 => $author_id,
+        'post_type'              => 'post',
+        'post_status'            => 'publish',
+        'posts_per_page'         => -1,
+        'fields'                 => 'ids',
+        'no_found_rows'          => true,
+        'update_post_meta_cache' => false,
+        'update_post_term_cache' => false,
+    );
+
+    // Portfolio view: only count posts the student has opted into the portfolio.
+    if ( get_query_var( 'portfolio_view' ) ) {
+        $args['meta_query'] = array(
+            array( 'key' => '_is_public_portfolio', 'value' => '1', 'compare' => '=' ),
+        );
+    }
+
+    $post_ids = get_posts( $args );
+    if ( empty( $post_ids ) ) {
+        return array();
+    }
+
+    $slugs = wp_get_object_terms( $post_ids, 'content-type', array( 'fields' => 'slugs' ) );
+    if ( is_wp_error( $slugs ) ) {
+        return array();
+    }
+
+    return array_values( array_unique( $slugs ) );
+}
+
+/**
+ * Active-filter styling + per-student responsiveness: hide filter items for any
+ * content type the viewed student hasn't posted in, so empty types never lead to
+ * a "nothing found" result. The "All" item (content-type-all) is never hidden.
+ *
+ * CSS-based hiding mirrors portfolio-link.php and works for both FSE Navigation
+ * blocks and classic menus. WordPress's own hide_empty counts posts site-wide,
+ * so it can't answer this per-author question — hence the runtime check.
  */
 add_action( 'wp_head', 'eportfolio_content_type_filter_css' );
 function eportfolio_content_type_filter_css() {
     if ( ! is_author() ) {
         return;
     }
-    echo '<style id="eportfolio-content-type-filter">'
-       . '.current-content-type > a, a.current-content-type { font-weight: 700; text-decoration: underline; }'
-       . '</style>' . "\n";
+
+    $css = '.current-content-type > a, a.current-content-type { font-weight: 700; text-decoration: underline; }';
+
+    $all_slugs = get_terms( array(
+        'taxonomy'   => 'content-type',
+        'hide_empty' => false,
+        'fields'     => 'slugs',
+    ) );
+
+    if ( ! is_wp_error( $all_slugs ) && ! empty( $all_slugs ) ) {
+        $empty = array_diff( $all_slugs, eportfolio_author_used_content_types() );
+        foreach ( $empty as $slug ) {
+            // Exact match on the relative ?content-type=slug filter URL.
+            $sel  = '[href$="content-type=' . $slug . '"]';
+            $css .= 'li:has(a' . $sel . '), a' . $sel . ' { display: none; }';
+        }
+    }
+
+    echo '<style id="eportfolio-content-type-filter">' . $css . '</style>' . "\n";
 }

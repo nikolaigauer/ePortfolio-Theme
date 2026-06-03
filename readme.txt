@@ -13,6 +13,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 = 2.6.1 =
 * Add selectable archive layout: Feed or Single post, per view (Advanced tab)
 * Add "All" item and active-state highlight to the Content Types filter menu
+* Hide content-type filters a student hasn't posted in (per-author, per view)
 * Fix README: clarify the theme is standalone and owns no form fields
 
 = 2.6.0 =
