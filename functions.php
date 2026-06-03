@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('EPORTFOLIO_VERSION', '2.5.0');
+define('EPORTFOLIO_VERSION', '2.6.1');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
@@ -118,12 +118,45 @@ function force_author_queried_object($query) {
 }
 add_action('parse_query', 'force_author_queried_object', 20);
 
+/**
+ * Resolve the layout mode for the current author/portfolio view.
+ *
+ * 'single' renders one post at a time (the ?show=POST_ID mechanic); 'feed'
+ * lets the template's own Query Loop perPage + pagination render a scrolling
+ * archive. Defaults: author archive = feed (process archive), portfolio =
+ * single (curated showcase). Admin-configurable on the Advanced tab.
+ *
+ * Safe to call both during pre_get_posts (main query) and at render time —
+ * it relies only on the portfolio_view query var, set by the rewrite rules.
+ */
+function eportfolio_layout_mode() {
+    if ( get_query_var( 'portfolio_view' ) ) {
+        return get_option( 'eportfolio_portfolio_layout', 'single' ) === 'feed' ? 'feed' : 'single';
+    }
+    return get_option( 'eportfolio_author_layout', 'feed' ) === 'single' ? 'single' : 'feed';
+}
+
 // Show one post at a time on author archives and portfolio pages; ?show=POST_ID to pick a specific one
 add_action( 'pre_get_posts', 'eportfolio_author_single_post_query', 2 );
 function eportfolio_author_single_post_query( $query ) {
     if ( is_admin() || ! $query->is_main_query() || ! $query->is_author ) return;
 
     $is_portfolio = (bool) get_query_var( 'portfolio_view' );
+
+    // Feed mode: don't clamp to one post. Let the template's perPage + pagination
+    // produce a scrolling archive. We still pin post_status to publish (so a
+    // logged-in author never sees their own pending/draft posts in the feed) and,
+    // on /portfolio/, keep the portfolio-public filter. The ?content-type= filter
+    // applied earlier by preserve_author_on_taxonomy_filter() is left intact.
+    if ( eportfolio_layout_mode() === 'feed' ) {
+        $query->set( 'post_status', 'publish' );
+        if ( $is_portfolio ) {
+            $query->set( 'meta_query', array(
+                array( 'key' => '_is_public_portfolio', 'value' => '1', 'compare' => '=' ),
+            ) );
+        }
+        return;
+    }
 
     // Resolve numeric author ID (may not yet be set as integer at this priority)
     $author_id = (int) $query->get( 'author' );
@@ -185,6 +218,9 @@ function eportfolio_rewrite_post_title_for_show( $block_content, $block, $instan
     if ( ! is_author() ) return $block_content;
     if ( empty( $block['attrs']['isLink'] ) ) return $block_content;
 
+    // Feed mode has no ?show= mechanic — let titles link to the real post.
+    if ( eportfolio_layout_mode() === 'feed' ) return $block_content;
+
     // Prefer context postId (set by Query Loop's post-template iteration)
     $post_id = isset( $instance->context['postId'] ) ? (int) $instance->context['postId'] : 0;
     if ( ! $post_id ) {
@@ -211,17 +247,49 @@ function eportfolio_rewrite_post_title_for_show( $block_content, $block, $instan
 }
 
 /**
- * Rewrite hardcoded content-type term IDs in Query Loop blocks to live IDs.
+ * Add an "Edit Post" node to the admin bar for the post currently shown in the
+ * single-post-render area on author / portfolio archives.
  *
- * Block templates store term IDs, which are site-specific and won't transfer
- * between subsites. This filter runs after WP has built the WP_Query args from
- * the block's taxQuery attribute, so we can safely swap in the correct IDs for
- * the current site without re-rendering the block.
+ * The single-post mechanic renders a post inside an archive query, so
+ * is_singular() is false and WordPress never adds its usual "Edit Post" link.
+ * We reuse the one post the main query already resolved (whether chosen via
+ * ?show= or the default most-recent) and, for users who can edit it, restore
+ * that affordance — without re-deriving which post is on screen.
  *
- * Logic: if a stored term ID is valid on this site, keep it (same ID, different
- * site is fine). If invalid and only one stored ID was given + only one term of
- * this taxonomy exists on the site, it's unambiguous — use that term. This
- * covers the standard single-term case (e.g. "Reflection" seeded on activation).
+ * The companion JS in eportfolio_show_nav_script() keeps this node's target in
+ * sync as the viewer fetch-navigates between posts without a full reload.
+ */
+add_action( 'admin_bar_menu', 'eportfolio_show_edit_admin_bar_node', 80 );
+function eportfolio_show_edit_admin_bar_node( $wp_admin_bar ) {
+    if ( is_admin() || ! is_user_logged_in() || ! is_author() ) return;
+
+    // The single-post-render query resolves to exactly one post; a multi-post
+    // (feed) view has no single edit target, so bail there.
+    global $wp_query;
+    if ( empty( $wp_query->posts ) || count( $wp_query->posts ) !== 1 ) return;
+
+    $post_id = (int) $wp_query->posts[0]->ID;
+    if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+    $edit_link = get_edit_post_link( $post_id );
+    if ( ! $edit_link ) return;
+
+    $wp_admin_bar->add_node( array(
+        'id'    => 'eportfolio-edit-shown-post',
+        'title' => __( 'Edit Post', 'eportfolio-theme-2' ),
+        'href'  => $edit_link,
+    ) );
+}
+
+/**
+ * Validate content-type term IDs in Query Loop blocks.
+ *
+ * Block templates store term IDs, which are site-specific. This filter strips
+ * any IDs that don't exist on the current site so stale template copies don't
+ * produce broken queries. When all IDs are valid they pass through unchanged.
+ *
+ * To target a specific content type, configure the Query Loop block's taxonomy
+ * filter in Site Editor → Templates → Author and pick the desired term.
  */
 add_filter( 'query_loop_block_query_vars', 'eportfolio_fix_content_type_term_ids', 5, 2 );
 function eportfolio_fix_content_type_term_ids( $query, $block ) {
@@ -243,23 +311,7 @@ function eportfolio_fix_content_type_term_ids( $query, $block ) {
             }
         }
 
-        // Fallback for the common case: one stored ID that doesn't exist here,
-        // but only one content-type term exists on the site — must be the same term.
-        if ( empty( $live_ids ) && count( $stored_ids ) === 1 ) {
-            $all_ids = get_terms( array(
-                'taxonomy'   => 'content-type',
-                'hide_empty' => false,
-                'number'     => 2,
-                'fields'     => 'ids',
-            ) );
-            if ( ! is_wp_error( $all_ids ) && count( $all_ids ) === 1 ) {
-                $live_ids = array_map( 'intval', $all_ids );
-            }
-        }
-
-        if ( ! empty( $live_ids ) ) {
-            $clause['terms'] = $live_ids;
-        }
+        $clause['terms'] = $live_ids;
     }
 
     return $query;
@@ -277,6 +329,7 @@ function eportfolio_load_modules() {
         'template-filters',       // Template overrides and filters
         'shortcodes',             // Dynamic shortcodes for templates
         'portfolio-link',         // Standalone portfolio link system
+        'content-type-filter',    // "All" filter link + active-state highlighting
     );
 
     // acf-fields, reflection-form, and post-form have been moved exclusively to the
@@ -292,28 +345,9 @@ function eportfolio_load_modules() {
 add_action('after_setup_theme', 'eportfolio_load_modules');
 
 /**
- * Seed default content-type terms so the taxonomy is usable out of the box.
- * Runs on activation and once on init (via option flag) for already-active installs.
- */
-function eportfolio_seed_default_terms() {
-    if ( ! taxonomy_exists( 'content-type' ) ) return;
-    if ( ! term_exists( 'reflection', 'content-type' ) ) {
-        wp_insert_term( 'Reflection', 'content-type', array( 'slug' => 'reflection' ) );
-    }
-}
-
-// One-time init seed for installs where the theme is already active
-add_action( 'init', function() {
-    if ( get_option( 'eportfolio_terms_seeded' ) ) return;
-    eportfolio_seed_default_terms();
-    update_option( 'eportfolio_terms_seeded', '1' );
-}, 2 ); // priority 2 — after taxonomy registration at priority 0
-
-/**
  * Flush rewrite rules on theme activation
  */
 function eportfolio_activate() {
-    eportfolio_seed_default_terms();
     flush_rewrite_rules();
 }
 add_action('after_switch_theme', 'eportfolio_activate');
@@ -343,6 +377,8 @@ add_action('switch_theme', 'eportfolio_deactivate');
 add_action( 'wp_footer', 'eportfolio_show_nav_script' );
 function eportfolio_show_nav_script() {
     if ( ! is_author() ) return;
+    // Only the single-post layout uses ?show= navigation; the feed has none.
+    if ( eportfolio_layout_mode() === 'feed' ) return;
     ?>
     <script>
     (function () {
@@ -371,6 +407,21 @@ function eportfolio_show_nav_script() {
                             ns.textContent = s.textContent;
                             s.parentNode.replaceChild( ns, s );
                         } );
+
+                        // Keep the admin-bar "Edit Post" node pointed at the post
+                        // now on screen (the fetched page rendered it server-side).
+                        var liveEdit = document.getElementById( 'wp-admin-bar-eportfolio-edit-shown-post' );
+                        if ( liveEdit ) {
+                            var freshEdit = doc.getElementById( 'wp-admin-bar-eportfolio-edit-shown-post' );
+                            var freshA    = freshEdit ? freshEdit.querySelector( 'a' ) : null;
+                            var liveA     = liveEdit.querySelector( 'a' );
+                            if ( freshA && liveA ) {
+                                liveA.href = freshA.href;
+                                liveEdit.style.display = '';
+                            } else {
+                                liveEdit.style.display = 'none';
+                            }
+                        }
                     }
                     container.style.opacity = '1';
                 } )

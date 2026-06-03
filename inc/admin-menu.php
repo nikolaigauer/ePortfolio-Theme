@@ -41,24 +41,6 @@ function eportfolio_render_settings_page() {
     // Determine active tab
     $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'privacy';
 
-    // Handle submission approve / trash (admin only)
-    if ($is_admin && isset($_POST['submission_action']) && check_admin_referer('submission_action', 'submission_nonce')) {
-        $sub_action  = sanitize_text_field($_POST['submission_action']);
-        $sub_post_id = intval($_POST['submission_post_id'] ?? 0);
-
-        // Only act on posts that are actual reflection submissions
-        if ($sub_post_id && get_post_meta($sub_post_id, '_reflection_source_page', true)) {
-            if ($sub_action === 'approve') {
-                wp_update_post(array('ID' => $sub_post_id, 'post_status' => 'publish'));
-                update_post_meta($sub_post_id, '_is_public_portfolio', '1');
-                echo '<div class="notice notice-success is-dismissible"><p><strong>Submission approved and published.</strong></p></div>';
-            } elseif ($sub_action === 'trash') {
-                wp_trash_post($sub_post_id);
-                echo '<div class="notice notice-success is-dismissible"><p><strong>Submission moved to trash.</strong></p></div>';
-            }
-        }
-    }
-    
     // Handle global privacy form submission (admin only)
     if ($is_admin && isset($_POST['save_global_privacy']) && check_admin_referer('global_privacy_action', 'global_privacy_nonce')) {
         $site_is_public = isset($_POST['site_is_public']) ? '1' : '0';
@@ -87,6 +69,16 @@ function eportfolio_render_settings_page() {
         }
     }
     
+    // Handle archive layout settings (admin only)
+    if ($is_admin && isset($_POST['save_layout']) && check_admin_referer('layout_action', 'layout_nonce')) {
+        $allowed = array('single', 'feed');
+        $author_layout    = in_array(($_POST['author_layout'] ?? ''), $allowed, true) ? $_POST['author_layout'] : 'feed';
+        $portfolio_layout = in_array(($_POST['portfolio_layout'] ?? ''), $allowed, true) ? $_POST['portfolio_layout'] : 'single';
+        update_option('eportfolio_author_layout', $author_layout);
+        update_option('eportfolio_portfolio_layout', $portfolio_layout);
+        echo '<div class="notice notice-success is-dismissible"><p><strong>Layout settings saved.</strong></p></div>';
+    }
+
     // Handle student navigation menu generation (admin only)
     if ($is_admin && isset($_POST['create_student_menu']) && check_admin_referer('student_menu_action', 'student_menu_nonce')) {
         $result = eportfolio_create_student_author_menu();
@@ -152,9 +144,6 @@ function eportfolio_render_settings_page() {
             </a>
             <a href="?page=eportfolio-settings&tab=advanced" class="nav-tab <?php echo $active_tab === 'advanced' ? 'nav-tab-active' : ''; ?>">
                 Advanced
-            </a>
-            <a href="?page=eportfolio-settings&tab=submissions" class="nav-tab <?php echo $active_tab === 'submissions' ? 'nav-tab-active' : ''; ?>">
-                Submissions
             </a>
         </nav>
         
@@ -354,28 +343,34 @@ function eportfolio_render_settings_page() {
 
                     <p class="description" style="margin-bottom: 15px; font-size: 12px;">
                         The theme registers a <strong>content-type</strong> taxonomy automatically — no plugin required.
-                        "Reflection" is seeded on activation so it works out of the box.
+                        Create terms that match the types of work students produce in your course.
                     </p>
 
                     <div style="background: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 8px 0; color: #0073aa;">Add more content types</h4>
+                        <h4 style="margin: 0 0 8px 0; color: #0073aa;">Add content types</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
                             Go to <strong>Posts → Content Types → Add New</strong> and create a term for each type of work students produce.
                         </p>
                         <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; font-size: 11px; margin: 8px 0;">
-                            Examples: Essay, Project, Lab Report, Studio Work, Research
+                            Examples: Reflection, Assignment, Lab Report, Studio Work, Research
                         </div>
                         <p style="margin: 8px 0 0 0; font-size: 11px; color: #666;">
-                            Submissions are auto-tagged "Reflection" by default. Each reflection page can specify a different term.
+                            Each Activity Builder page can specify which content type its submissions are tagged with.
                         </p>
                     </div>
 
                     <div style="background: white; padding: 15px; border-radius: 4px;">
                         <h4 style="margin: 0 0 8px 0; color: #0073aa;">Filtering on the archive page</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
-                            The student archive template uses Query Loop blocks scoped to the current author.
-                            Add a <code>&lt;details&gt;</code> block per content type with a filtered Query Loop inside —
-                            students can expand and collapse each section.
+                            Use the <strong>Content Types menu generator</strong> (middle column) — it builds one
+                            filter link per type, plus an <strong>All</strong> link, each scoped automatically to
+                            the student whose archive is being viewed. Assign that menu to a Navigation block in
+                            the Author template.
+                        </p>
+                        <p style="margin: 8px 0 0 0; font-size: 12px;">
+                            In <strong>Feed</strong> mode (Advanced → Display / Layout) each filter shows the full
+                            scroll of that content type; in <strong>Single post</strong> mode it shows one matching
+                            post at a time.
                         </p>
                     </div>
                 </div>
@@ -545,141 +540,56 @@ function eportfolio_render_settings_page() {
                     </p>
                 </form>
             </div>
-        </div>
-        <?php endif; ?>
 
-        <!-- Submissions Tab -->
-        <?php if ($active_tab === 'submissions'): ?>
-        <div class="eportfolio-tab-content">
             <?php
-            // Status filter
-            $valid_statuses = array('pending', 'all', 'publish', 'private', 'trash');
-            $status_filter  = isset($_GET['sub_status']) && in_array($_GET['sub_status'], $valid_statuses)
-                ? sanitize_key($_GET['sub_status'])
-                : 'pending';
-
-            $query_status = ($status_filter === 'all')
-                ? array('publish', 'pending', 'private', 'draft')
-                : array($status_filter);
-
-            $submissions = get_posts(array(
-                'post_type'      => 'post',
-                'post_status'    => $query_status,
-                'posts_per_page' => 100,
-                'orderby'        => 'date',
-                'order'          => 'DESC',
-                'meta_query'     => array(
-                    array(
-                        'key'     => '_reflection_source_page',
-                        'compare' => 'EXISTS',
-                    ),
-                ),
-            ));
-
-            $status_labels = array(
-                'publish' => array('label' => 'Published', 'color' => '#00a32a'),
-                'pending' => array('label' => 'Pending',   'color' => '#dba617'),
-                'private' => array('label' => 'Private',   'color' => '#2271b1'),
-                'draft'   => array('label' => 'Draft',     'color' => '#646970'),
-                'trash'   => array('label' => 'Trash',     'color' => '#d63638'),
-            );
-
-            $tab_url = admin_url('admin.php?page=eportfolio-settings&tab=submissions');
+            $author_layout    = get_option('eportfolio_author_layout', 'feed');
+            $portfolio_layout = get_option('eportfolio_portfolio_layout', 'single');
             ?>
+            <div class="card" style="max-width: 800px; background: #f6ffed; border-left: 4px solid #52c41a; margin-top: 20px;">
+                <h2 style="margin-top: 0;">🧭 Display / Layout</h2>
 
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; max-width: 1200px;">
-                <h2 style="margin: 0;">Student Submissions</h2>
-                <div>
-                    <?php foreach (array('pending' => 'Pending', 'all' => 'All', 'publish' => 'Published', 'private' => 'Private', 'trash' => 'Trash') as $slug => $label): ?>
-                    <a href="<?php echo esc_url(add_query_arg('sub_status', $slug, $tab_url)); ?>"
-                       class="button <?php echo $status_filter === $slug ? 'button-primary' : ''; ?>"
-                       style="margin-left: 4px;"><?php echo esc_html($label); ?></a>
-                    <?php endforeach; ?>
-                </div>
+                <p class="description" style="margin-bottom: 15px; font-size: 13px;">
+                    <strong>Feed</strong> shows all of a student's posts in a scrolling archive (best for a process
+                    archive — works hand-in-hand with the Content Types filter menu). <strong>Single post</strong>
+                    shows one post at a time with click-through navigation (best for a curated showcase).
+                </p>
+
+                <form method="post">
+                    <?php wp_nonce_field('layout_action', 'layout_nonce'); ?>
+
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row"><label for="author_layout">Author archive <code>/<?php echo esc_html($current_author_slug); ?>/</code></label></th>
+                            <td>
+                                <select id="author_layout" name="author_layout">
+                                    <option value="feed"   <?php selected($author_layout, 'feed'); ?>>Feed (scrolling archive)</option>
+                                    <option value="single" <?php selected($author_layout, 'single'); ?>>Single post at a time</option>
+                                </select>
+                                <p class="description" style="font-size: 12px;">The process archive. Default: Feed.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="portfolio_layout">Portfolio <code>/portfolio/</code></label></th>
+                            <td>
+                                <select id="portfolio_layout" name="portfolio_layout">
+                                    <option value="single" <?php selected($portfolio_layout, 'single'); ?>>Single post at a time</option>
+                                    <option value="feed"   <?php selected($portfolio_layout, 'feed'); ?>>Feed (scrolling archive)</option>
+                                </select>
+                                <p class="description" style="font-size: 12px;">
+                                    The curated showcase. Default: Single post.
+                                    <?php if ( get_option('eportfolio_feature_portfolio', '0') !== '1' ) : ?>
+                                        <br><em>Portfolio Curation is currently off, so this only takes effect once it's enabled in Privacy Settings.</em>
+                                    <?php endif; ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <p style="margin-top: 10px;">
+                        <input type="submit" name="save_layout" class="button button-primary button-large" value="Save Layout Settings" />
+                    </p>
+                </form>
             </div>
-
-            <?php if (empty($submissions)): ?>
-            <p style="color: #646970; font-style: italic;">No submissions found with this status.</p>
-
-            <?php else: ?>
-            <table class="wp-list-table widefat fixed striped" style="max-width: 1200px;">
-                <thead>
-                    <tr>
-                        <th style="width: 22%">Student</th>
-                        <th style="width: 28%">Submission</th>
-                        <th style="width: 22%">Week / Page</th>
-                        <th style="width: 12%">Date</th>
-                        <th style="width: 8%">Status</th>
-                        <th style="width: 8%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($submissions as $sub):
-                    $author        = get_userdata($sub->post_author);
-                    $source_page   = intval(get_post_meta($sub->ID, '_reflection_source_page', true));
-                    $source_title  = $source_page ? get_the_title($source_page) : '—';
-                    $source_url    = $source_page ? get_permalink($source_page) : null;
-                    $edit_url      = get_edit_post_link($sub->ID);
-                    $status_info   = $status_labels[$sub->post_status] ?? array('label' => $sub->post_status, 'color' => '#646970');
-                ?>
-                <tr>
-                    <td>
-                        <strong><?php echo esc_html($author ? $author->display_name : '—'); ?></strong><br>
-                        <small style="color:#646970;"><?php echo esc_html($author ? $author->user_login : ''); ?></small>
-                    </td>
-                    <td>
-                        <a href="<?php echo esc_url($edit_url); ?>" style="font-weight:600;">
-                            <?php echo esc_html($sub->post_title); ?>
-                        </a>
-                    </td>
-                    <td>
-                        <?php if ($source_url): ?>
-                            <a href="<?php echo esc_url($source_url); ?>" target="_blank"><?php echo esc_html($source_title); ?></a>
-                        <?php else: ?>
-                            <?php echo esc_html($source_title); ?>
-                        <?php endif; ?>
-                    </td>
-                    <td style="font-size:12px; color:#646970;">
-                        <?php echo esc_html(get_the_date('M j, Y', $sub->ID)); ?>
-                    </td>
-                    <td>
-                        <span style="color:<?php echo esc_attr($status_info['color']); ?>; font-weight:600; font-size:12px;">
-                            <?php echo esc_html($status_info['label']); ?>
-                        </span>
-                    </td>
-                    <td>
-                        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                        <?php if (in_array($sub->post_status, array('pending', 'private', 'draft'))): ?>
-                        <form method="post" style="margin:0;">
-                            <?php wp_nonce_field('submission_action', 'submission_nonce'); ?>
-                            <input type="hidden" name="submission_action" value="approve">
-                            <input type="hidden" name="submission_post_id" value="<?php echo esc_attr($sub->ID); ?>">
-                            <button type="submit" class="button button-primary" style="font-size:11px; height:24px; line-height:22px; padding:0 8px;">
-                                Approve
-                            </button>
-                        </form>
-                        <?php endif; ?>
-                        <?php if ($sub->post_status !== 'trash'): ?>
-                        <form method="post" style="margin:0;"
-                              onsubmit="return confirm('Move this submission to trash?');">
-                            <?php wp_nonce_field('submission_action', 'submission_nonce'); ?>
-                            <input type="hidden" name="submission_action" value="trash">
-                            <input type="hidden" name="submission_post_id" value="<?php echo esc_attr($sub->ID); ?>">
-                            <button type="submit" class="button" style="font-size:11px; height:24px; line-height:22px; padding:0 8px; color:#d63638;">
-                                Trash
-                            </button>
-                        </form>
-                        <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-            <p style="margin-top: 8px; color: #646970; font-size: 12px;">
-                <?php echo count($submissions); ?> submission<?php echo count($submissions) !== 1 ? 's' : ''; ?> shown.
-            </p>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
 
@@ -865,6 +775,15 @@ function eportfolio_create_content_type_menu() {
     if ( empty( $terms ) || is_wp_error( $terms ) ) {
         return false;
     }
+
+    // "All" — clears the filter. URL "#" is resolved at render time to the
+    // current author archive base URL by inc/content-type-filter.php.
+    wp_update_nav_menu_item( $menu_id, 0, array(
+        'menu-item-title'   => 'All',
+        'menu-item-url'     => '#',
+        'menu-item-status'  => 'publish',
+        'menu-item-classes' => 'content-type-all',
+    ) );
 
     foreach ( $terms as $term ) {
         wp_update_nav_menu_item( $menu_id, 0, array(

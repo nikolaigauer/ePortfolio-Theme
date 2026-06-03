@@ -45,6 +45,18 @@ function eportfolio_portfolio_body_class($classes) {
 }
 
 /**
+ * Expose the resolved layout mode (single | feed) as a body class on author
+ * and portfolio archives, so CSS/JS can branch on it.
+ */
+add_filter('body_class', 'eportfolio_layout_body_class');
+function eportfolio_layout_body_class($classes) {
+    if (is_author() && function_exists('eportfolio_layout_mode')) {
+        $classes[] = 'eportfolio-layout-' . eportfolio_layout_mode();
+    }
+    return $classes;
+}
+
+/**
  * Modify the document title for portfolio views
  */
 add_filter('pre_get_document_title', 'eportfolio_portfolio_title', 20);
