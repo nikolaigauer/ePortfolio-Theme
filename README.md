@@ -2,7 +2,7 @@
 
 A WordPress FSE (Full Site Editor) block theme for university ePortfolio courses. It gives each student a clean, templated portfolio presence: privacy controls, a process archive on the author side, an optional curated public portfolio, and a content-type filter menu — all configurable without touching raw code.
 
-**Version**: 2.6.1
+**Version**: 2.6.2
 **Parent theme**: Twenty Twenty-Five
 **Requires**: WordPress 6.8+, PHP 7.4+
 **License**: GPL v2 or later — see [LICENSE](LICENSE)

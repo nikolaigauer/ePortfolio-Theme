@@ -10,6 +10,9 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 == Changelog ==
 
+= 2.6.2 =
+* Fix: empty content-type filters now hide reliably (JS-based, no :has() CSS dependency)
+
 = 2.6.1 =
 * Add selectable archive layout: Feed or Single post, per view (Advanced tab)
 * Add "All" item and active-state highlight to the Content Types filter menu
