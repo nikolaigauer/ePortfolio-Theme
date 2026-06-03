@@ -69,6 +69,16 @@ function eportfolio_render_settings_page() {
         }
     }
     
+    // Handle archive layout settings (admin only)
+    if ($is_admin && isset($_POST['save_layout']) && check_admin_referer('layout_action', 'layout_nonce')) {
+        $allowed = array('single', 'feed');
+        $author_layout    = in_array(($_POST['author_layout'] ?? ''), $allowed, true) ? $_POST['author_layout'] : 'feed';
+        $portfolio_layout = in_array(($_POST['portfolio_layout'] ?? ''), $allowed, true) ? $_POST['portfolio_layout'] : 'single';
+        update_option('eportfolio_author_layout', $author_layout);
+        update_option('eportfolio_portfolio_layout', $portfolio_layout);
+        echo '<div class="notice notice-success is-dismissible"><p><strong>Layout settings saved.</strong></p></div>';
+    }
+
     // Handle student navigation menu generation (admin only)
     if ($is_admin && isset($_POST['create_student_menu']) && check_admin_referer('student_menu_action', 'student_menu_nonce')) {
         $result = eportfolio_create_student_author_menu();
@@ -352,9 +362,15 @@ function eportfolio_render_settings_page() {
                     <div style="background: white; padding: 15px; border-radius: 4px;">
                         <h4 style="margin: 0 0 8px 0; color: #0073aa;">Filtering on the archive page</h4>
                         <p style="margin: 5px 0; font-size: 12px;">
-                            The student archive template uses Query Loop blocks scoped to the current author.
-                            Add a <code>&lt;details&gt;</code> block per content type with a filtered Query Loop inside —
-                            students can expand and collapse each section.
+                            Use the <strong>Content Types menu generator</strong> (middle column) — it builds one
+                            filter link per type, plus an <strong>All</strong> link, each scoped automatically to
+                            the student whose archive is being viewed. Assign that menu to a Navigation block in
+                            the Author template.
+                        </p>
+                        <p style="margin: 8px 0 0 0; font-size: 12px;">
+                            In <strong>Feed</strong> mode (Advanced → Display / Layout) each filter shows the full
+                            scroll of that content type; in <strong>Single post</strong> mode it shows one matching
+                            post at a time.
                         </p>
                     </div>
                 </div>
@@ -521,6 +537,56 @@ function eportfolio_render_settings_page() {
                     
                     <p style="margin-top: 20px;">
                         <input type="submit" name="save_author_slug" class="button button-primary button-large" value="Update URL Structure" />
+                    </p>
+                </form>
+            </div>
+
+            <?php
+            $author_layout    = get_option('eportfolio_author_layout', 'feed');
+            $portfolio_layout = get_option('eportfolio_portfolio_layout', 'single');
+            ?>
+            <div class="card" style="max-width: 800px; background: #f6ffed; border-left: 4px solid #52c41a; margin-top: 20px;">
+                <h2 style="margin-top: 0;">🧭 Display / Layout</h2>
+
+                <p class="description" style="margin-bottom: 15px; font-size: 13px;">
+                    <strong>Feed</strong> shows all of a student's posts in a scrolling archive (best for a process
+                    archive — works hand-in-hand with the Content Types filter menu). <strong>Single post</strong>
+                    shows one post at a time with click-through navigation (best for a curated showcase).
+                </p>
+
+                <form method="post">
+                    <?php wp_nonce_field('layout_action', 'layout_nonce'); ?>
+
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row"><label for="author_layout">Author archive <code>/<?php echo esc_html($current_author_slug); ?>/</code></label></th>
+                            <td>
+                                <select id="author_layout" name="author_layout">
+                                    <option value="feed"   <?php selected($author_layout, 'feed'); ?>>Feed (scrolling archive)</option>
+                                    <option value="single" <?php selected($author_layout, 'single'); ?>>Single post at a time</option>
+                                </select>
+                                <p class="description" style="font-size: 12px;">The process archive. Default: Feed.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="portfolio_layout">Portfolio <code>/portfolio/</code></label></th>
+                            <td>
+                                <select id="portfolio_layout" name="portfolio_layout">
+                                    <option value="single" <?php selected($portfolio_layout, 'single'); ?>>Single post at a time</option>
+                                    <option value="feed"   <?php selected($portfolio_layout, 'feed'); ?>>Feed (scrolling archive)</option>
+                                </select>
+                                <p class="description" style="font-size: 12px;">
+                                    The curated showcase. Default: Single post.
+                                    <?php if ( get_option('eportfolio_feature_portfolio', '0') !== '1' ) : ?>
+                                        <br><em>Portfolio Curation is currently off, so this only takes effect once it's enabled in Privacy Settings.</em>
+                                    <?php endif; ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <p style="margin-top: 10px;">
+                        <input type="submit" name="save_layout" class="button button-primary button-large" value="Save Layout Settings" />
                     </p>
                 </form>
             </div>
@@ -709,6 +775,15 @@ function eportfolio_create_content_type_menu() {
     if ( empty( $terms ) || is_wp_error( $terms ) ) {
         return false;
     }
+
+    // "All" — clears the filter. URL "#" is resolved at render time to the
+    // current author archive base URL by inc/content-type-filter.php.
+    wp_update_nav_menu_item( $menu_id, 0, array(
+        'menu-item-title'   => 'All',
+        'menu-item-url'     => '#',
+        'menu-item-status'  => 'publish',
+        'menu-item-classes' => 'content-type-all',
+    ) );
 
     foreach ( $terms as $term ) {
         wp_update_nav_menu_item( $menu_id, 0, array(
