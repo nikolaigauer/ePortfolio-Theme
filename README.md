@@ -2,7 +2,7 @@
 
 A WordPress FSE (Full Site Editor) block theme for university ePortfolio courses. It gives each student a clean, templated portfolio presence: privacy controls, a process archive on the author side, an optional curated public portfolio, and a content-type filter menu — all configurable without touching raw code.
 
-**Version**: 2.7.0
+**Version**: 2.7.1
 **Parent theme**: Twenty Twenty-Five
 **Requires**: WordPress 6.8+, PHP 7.4+
 **License**: GPL v2 or later — see [LICENSE](LICENSE)
@@ -57,7 +57,7 @@ Because `portfolio_is_public` lives in the global `wp_usermeta` table, its value
 
 **Mitigation: use demo/test accounts on any demo site, never real student accounts that already exist on production sites.** Everything else the theme writes (site privacy, author slug, per-post portfolio checkbox, `/portfolio/` rewrites) is per-site and cannot bleed across sites.
 
-> The installed folder must stay named `eportfolio-theme-2` — block template parts reference `"theme":"eportfolio-theme-2"` and won't resolve under a different slug.
+> **Install/update in place under the folder name `eportfolio-theme-2`.** As of v2.7.1 the template files no longer hard-code the theme slug, so headers/footers render even if the folder is named differently — but the folder name *is* the theme's slug, and Site-Editor customizations are keyed to it. Installing the GitHub **release zip** creates a version-named folder (e.g. `ePortfolio-Theme-2.7.0`), which activates as a *separate* theme and orphans any customizations. Rename such an upload back to `eportfolio-theme-2` (or update in place) before activating.
 
 ---
 
