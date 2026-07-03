@@ -2,7 +2,7 @@
 
 A WordPress FSE (Full Site Editor) block theme for university ePortfolio courses. It gives each student a clean, templated portfolio presence: privacy controls, a process archive on the author side, an optional curated public portfolio, and a content-type filter menu — all configurable without touching raw code.
 
-**Version**: 2.6.2
+**Version**: 2.7.0
 **Parent theme**: Twenty Twenty-Five
 **Requires**: WordPress 6.8+, PHP 7.4+
 **License**: GPL v2 or later — see [LICENSE](LICENSE)
@@ -109,14 +109,14 @@ eportfolio-theme-2/
 │   ├── post-metabox.php       # Portfolio checkbox on posts
 │   ├── rewrite-rules.php      # /portfolio/ URL structure
 │   ├── shortcodes.php         # [archive_navigation] etc.
-│   └── template-filters.php   # Template routing (WP 6.7+ fix) + body classes
+│   └── template-filters.php   # Template routing (/portfolio/ → portfolio.html) + body classes
 ├── templates/
-│   ├── archive.html           # /author/username/ view
-│   ├── author.html            # /portfolio/username/ view
+│   ├── author.html            # /author/username/ view — feed (process archive)
+│   ├── portfolio.html         # /portfolio/username/ view — curated single-post
 │   └── ...
 └── parts/
-    ├── header-student.html
-    ├── header-portfolio.html
+    ├── header-author.html     # header for /author/ (feed)
+    ├── header-portfolio.html  # header for /portfolio/ (curated)
     └── ...
 ```
 

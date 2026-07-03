@@ -102,65 +102,35 @@ function eportfolio_get_portfolio_count($user_id) {
 }
 
 /**
- * Serve the archive template when viewing a regular author page (non-portfolio).
+ * Route /portfolio/ views to the dedicated "portfolio" template.
  *
- * WHY get_block_template (singular) and not get_block_templates (plural):
- * WordPress 6.7+ resolves FSE page templates via WP_Block_Templates_Registry +
- * get_block_template(), which bypasses the get_block_templates filter entirely.
- * The plural filter still fires in the Site Editor (hence it looked correct there)
- * but never fired during actual front-end rendering. The singular filter fires
- * as the final step of every individual template lookup, reliably across all
- * WP versions since 5.9.
+ * Both /author/x and /portfolio/x are author queries, so WordPress's author
+ * template hierarchy resolves both to author.html by default. That is correct
+ * for /author/ (the process-archive feed lives in author.html), but /portfolio/
+ * is the curated single-post view and needs its own template. We prepend the
+ * "portfolio" slug to the hierarchy on portfolio views so WordPress natively
+ * resolves templates/portfolio.html, while /author/ is left untouched and
+ * resolves author.html on its own.
+ *
+ * WHY a template-hierarchy filter (and NOT a get_block_template content swap):
+ * an earlier version hooked the singular `get_block_template` filter to swap
+ * template content. That filter is NOT invoked by front-end resolution —
+ * resolve_block_template() (WP core) fetches candidates via get_block_templates()
+ * (PLURAL) and never calls the singular one — so the swap silently stopped once
+ * a template was customised in the Site Editor, and both URLs rendered the same
+ * template. The `{$type}_template_hierarchy` filter is the supported,
+ * version-stable way to change which template wins, and it works identically for
+ * file-based and DB-customised templates.
+ *
+ * NOTE: hierarchy entries here are PHP filenames (e.g. "author.php"); the
+ * block-template resolver strips the extension before matching a block template.
  */
-add_filter('get_block_template', 'eportfolio_author_to_archive_template', 10, 3);
-function eportfolio_author_to_archive_template($block_template, $id, $template_type) {
-
-    // Only care about page templates
-    if ($template_type !== 'wp_template') {
-        return $block_template;
+add_filter('author_template_hierarchy', 'eportfolio_portfolio_template_hierarchy');
+function eportfolio_portfolio_template_hierarchy($templates) {
+    if (get_query_var('portfolio_view')) {
+        array_unshift($templates, 'portfolio.php');
     }
-
-    // Must have a resolved template and it must be the author template
-    if (!$block_template || $block_template->slug !== 'author') {
-        return $block_template;
-    }
-
-    // Only swap on regular author pages — not portfolio views
-    if (!is_author() || get_query_var('portfolio_view')) {
-        return $block_template;
-    }
-
-    // Prefer a DB-saved (site-editor-customised) archive template for this theme
-    $customized = get_posts(array(
-        'post_type'      => 'wp_template',
-        'post_status'    => 'publish',
-        'name'           => 'archive',
-        'posts_per_page' => 1,
-        'tax_query'      => array(
-            array(
-                'taxonomy' => 'wp_theme',
-                'field'    => 'slug',
-                'terms'    => get_stylesheet(),
-            ),
-        ),
-    ));
-
-    $swapped          = clone $block_template;
-    $swapped->slug    = 'archive';
-    $swapped->id      = get_stylesheet() . '//archive';
-    $swapped->title   = 'Archive';
-
-    if (!empty($customized)) {
-        $swapped->content = $customized[0]->post_content;
-        $swapped->source  = 'custom';
-    } else {
-        $archive_file = get_stylesheet_directory() . '/templates/archive.html';
-        if (file_exists($archive_file)) {
-            $swapped->content = file_get_contents($archive_file);
-        }
-    }
-
-    return $swapped;
+    return $templates;
 }
 
 /**

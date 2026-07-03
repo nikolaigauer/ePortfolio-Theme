@@ -29,13 +29,14 @@ function cohort_theme_privacy_control() {
     // ========================================
     if ($site_is_public === '1') {
 
-        // Rule 1: Portfolio pages follow portfolio-level privacy
-        // Strip query string before matching so ?show=POST_ID URLs are handled correctly.
-        $public_uri_path = strtok($_SERVER['REQUEST_URI'], '?');
-        if (preg_match('#^/portfolio/([^/]+)/?$#', $public_uri_path, $matches)) {
-            $user = get_user_by('slug', $matches[1]);
-            if ($user) {
-                $portfolio_is_public = get_user_meta($user->ID, 'portfolio_is_public', true);
+        // Rule 1: Portfolio pages follow portfolio-level privacy.
+        // Detected via the portfolio_view query var (set by the rewrite rules)
+        // rather than a REQUEST_URI regex, so pagination (/portfolio/x/page/2/),
+        // ?show= URLs, and subdirectory installs are all covered.
+        if (get_query_var('portfolio_view') && is_author()) {
+            $portfolio_author = get_queried_object();
+            if ($portfolio_author && isset($portfolio_author->ID)) {
+                $portfolio_is_public = get_user_meta($portfolio_author->ID, 'portfolio_is_public', true);
                 if ($portfolio_is_public === '0') {
                     auth_redirect(); // Block if portfolio is private
                 }
@@ -77,10 +78,13 @@ function cohort_theme_privacy_control() {
         return;
     }
     
-    // Exception 2: Public portfolios are accessible
-    if (preg_match('#^/portfolio/([^/]+)/?$#', $request_uri, $matches)) {
-        $user = get_user_by('slug', $matches[1]);
-        if ($user && get_user_meta($user->ID, 'portfolio_is_public', true) === '1') {
+    // Exception 2: Public portfolios are accessible.
+    // Query-var check (same rationale as the public-site branch above): also
+    // covers paginated portfolio URLs, which the old regex fail-closed on.
+    if (get_query_var('portfolio_view') && is_author()) {
+        $portfolio_author = get_queried_object();
+        if ($portfolio_author && isset($portfolio_author->ID)
+            && get_user_meta($portfolio_author->ID, 'portfolio_is_public', true) === '1') {
             return;
         }
     }
@@ -111,4 +115,47 @@ function cohort_theme_privacy_control() {
     
     // Block everything else - redirect to login
     auth_redirect();
+}
+
+/**
+ * REST API privacy gate.
+ *
+ * template_redirect (above) never fires for REST requests — the REST server
+ * dispatches on parse_request and exits first. Without this, a globally
+ * private site still leaks every published post's full content, the media
+ * (upload URLs) list, and the user list to unauthenticated visitors via
+ * /wp-json/ (and ?rest_route=). This closes that gap by requiring
+ * authentication for REST reads whenever the site is private.
+ *
+ * Logged-in editor/admin usage (block editor, dashboard) is cookie-
+ * authenticated, so is_user_logged_in() passes them through untouched.
+ *
+ * NOTE: On a *public* site with individual private portfolios, this filter
+ * intentionally does nothing — REST stays open. Excluding private-portfolio
+ * authors from public-site REST queries would need rest_post_query /
+ * rest_attachment_query filters (author__not_in) and is a separate decision.
+ */
+add_filter('rest_authentication_errors', 'eportfolio_rest_privacy_gate');
+function eportfolio_rest_privacy_gate($result) {
+    // Another authentication check already ran and decided — respect it.
+    if (!empty($result)) {
+        return $result;
+    }
+
+    // Authenticated users (cookie/nonce or application password) pass through.
+    if (is_user_logged_in()) {
+        return $result;
+    }
+
+    // Public site: REST stays open (same posture as template_redirect).
+    if (get_option('eportfolio_site_is_public', '0') === '1') {
+        return $result;
+    }
+
+    // Private site + unauthenticated request: block the read.
+    return new WP_Error(
+        'rest_login_required',
+        __('This site is private. Please log in to access the API.', 'eportfolio-theme'),
+        array('status' => 401)
+    );
 }

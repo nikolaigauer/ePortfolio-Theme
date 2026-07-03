@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('EPORTFOLIO_VERSION', '2.6.2');
+define('EPORTFOLIO_VERSION', '2.7.0');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
@@ -47,9 +47,11 @@ function eportfolio_register_content_type_taxonomy() {
         'show_in_rest'      => true, // required for block editor filter UI
         'rewrite'           => array( 'slug' => 'content-type' ),
         'capabilities'      => array(
-            'manage_terms'  => 'edit_posts',
-            'edit_terms'    => 'edit_posts',
-            'delete_terms'  => 'edit_posts',
+            // Students (Authors) only ever assign terms; creating/renaming/deleting
+            // the shared vocabulary is an instructor/admin action.
+            'manage_terms'  => 'manage_options',
+            'edit_terms'    => 'manage_options',
+            'delete_terms'  => 'manage_options',
             'assign_terms'  => 'edit_posts',
         ),
     ) );
@@ -372,7 +374,7 @@ add_action('switch_theme', 'eportfolio_deactivate');
  *
  * Template requirement: add the CSS class "single-post-render" to the Group
  * or Query Loop wrapper that surrounds the main post display column in both
- * the archive and portfolio templates (one-time step in the Site Editor).
+ * the author and portfolio templates (one-time step in the Site Editor).
  */
 add_action( 'wp_footer', 'eportfolio_show_nav_script' );
 function eportfolio_show_nav_script() {
