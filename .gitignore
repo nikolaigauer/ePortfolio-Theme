@@ -14,6 +14,12 @@ wp-content/cache/supercache/
 CLAUDE.md
 .claude/
 
+# Internal notes — never publish (roadmaps, security punch-lists, etc.)
+ROADMAP.md
+NOTES.md
+SECURITY-NOTES.md
+*.internal.md
+
 # macOS
 .DS_Store
 .DS_Store?
