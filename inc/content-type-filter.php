@@ -17,7 +17,9 @@
  *   3. Per-student responsiveness: filter links for content types the viewed
  *      student hasn't posted in are hidden, so empty types never lead to a
  *      "nothing found" result. (WordPress's own hide_empty counts posts
- *      site-wide, so it can't answer this per-author question.)
+ *      site-wide, so it can't answer this per-author question.) Any
+ *      navigation submenu (e.g. a "Filter" dropdown) whose content-type
+ *      links are all hidden is hidden too.
  *
  * Done in the browser (like portfolio-link.php) because FSE Navigation blocks
  * render via wp_navigation post content and bypass the wp_get_nav_menu_items
@@ -123,6 +125,25 @@ function eportfolio_content_type_filter_script() {
                     hidden.push( slug );
                 } else if ( active && slug === active ) {
                     item( a ).classList.add( 'current-content-type' );
+                }
+            } );
+
+            // Collapse submenus (e.g. a "Filter" dropdown grouping the types)
+            // left with no visible items. Deepest first, so nested submenus
+            // that empty out also empty their parents.
+            var submenus = Array.prototype.slice.call(
+                document.querySelectorAll( '.wp-block-navigation-submenu, .wp-block-navigation-item.has-child' )
+            ).reverse();
+            submenus.forEach( function ( sub ) {
+                var list = sub.querySelector( ':scope > ul' );
+                if ( ! list || ! list.querySelector( 'a[href*="content-type="]' ) ) {
+                    return;
+                }
+                var visible = Array.prototype.some.call( list.children, function ( li ) {
+                    return li.style.display !== 'none';
+                } );
+                if ( ! visible ) {
+                    sub.style.display = 'none';
                 }
             } );
 
