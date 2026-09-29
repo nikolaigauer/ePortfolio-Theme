@@ -553,6 +553,12 @@ function eportfolio_render_settings_page() {
                     archive — works hand-in-hand with the Content Types filter menu). <strong>Single post</strong>
                     shows one post at a time with click-through navigation (best for a curated showcase).
                 </p>
+                <p class="description" style="margin-bottom: 15px; font-size: 13px;">
+                    Each layout uses its own template, whichever URL shows it: <strong>Feed</strong> renders the
+                    <em>Author</em> template and <strong>Single post</strong> renders the <em>Portfolio</em> template
+                    (edit them under Appearance &rarr; Editor &rarr; Templates). The header still follows the URL:
+                    <code>header-author</code> on the author archive, <code>header-portfolio</code> on the portfolio.
+                </p>
 
                 <form method="post">
                     <?php wp_nonce_field('layout_action', 'layout_nonce'); ?>

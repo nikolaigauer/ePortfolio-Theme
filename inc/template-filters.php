@@ -102,15 +102,22 @@ function eportfolio_get_portfolio_count($user_id) {
 }
 
 /**
- * Route /portfolio/ views to the dedicated "portfolio" template.
+ * Pick the archive template from the admin LAYOUT setting, not the URL.
+ *
+ * The two templates hold two different page structures:
+ *   - templates/portfolio.html — "Single post" layout: a <details> sidebar of
+ *     post titles plus one post at a time (the ?show=POST_ID mechanic).
+ *   - templates/author.html    — "Feed" layout: a paginated scrolling archive.
  *
  * Both /author/x and /portfolio/x are author queries, so WordPress's author
- * template hierarchy resolves both to author.html by default. That is correct
- * for /author/ (the process-archive feed lives in author.html), but /portfolio/
- * is the curated single-post view and needs its own template. We prepend the
- * "portfolio" slug to the hierarchy on portfolio views so WordPress natively
- * resolves templates/portfolio.html, while /author/ is left untouched and
- * resolves author.html on its own.
+ * template hierarchy resolves both to author.html by default. When the view's
+ * layout (eportfolio_layout_mode(), set on the admin Layout panel) is "single",
+ * we prepend the "portfolio" slug so WordPress natively resolves portfolio.html;
+ * in "feed" mode the hierarchy is left alone and author.html wins. Which URL is
+ * being viewed only decides the header (see eportfolio_swap_archive_header()).
+ *
+ * The template slugs are unchanged, so Site Editor customisations of either
+ * template stay attached and simply apply to whichever layout they implement.
  *
  * WHY a template-hierarchy filter (and NOT a get_block_template content swap):
  * an earlier version hooked the singular `get_block_template` filter to swap
@@ -127,10 +134,31 @@ function eportfolio_get_portfolio_count($user_id) {
  */
 add_filter('author_template_hierarchy', 'eportfolio_portfolio_template_hierarchy');
 function eportfolio_portfolio_template_hierarchy($templates) {
-    if (get_query_var('portfolio_view')) {
+    if (function_exists('eportfolio_layout_mode') && eportfolio_layout_mode() === 'single') {
         array_unshift($templates, 'portfolio.php');
     }
     return $templates;
+}
+
+/**
+ * Render the header that matches the URL, whichever layout template is in use.
+ *
+ * author.html references the header-author part and portfolio.html references
+ * header-portfolio. Since the layout setting (not the URL) now picks the
+ * template, swap between exactly those two slugs so /author/ always gets
+ * header-author and /portfolio/ always gets header-portfolio. Any other
+ * template part is left untouched.
+ */
+add_filter('render_block_data', 'eportfolio_swap_archive_header');
+function eportfolio_swap_archive_header($parsed_block) {
+    if (($parsed_block['blockName'] ?? '') !== 'core/template-part' || is_admin() || !is_author()) {
+        return $parsed_block;
+    }
+    $slug = $parsed_block['attrs']['slug'] ?? '';
+    if ($slug === 'header-author' || $slug === 'header-portfolio') {
+        $parsed_block['attrs']['slug'] = get_query_var('portfolio_view') ? 'header-portfolio' : 'header-author';
+    }
+    return $parsed_block;
 }
 
 /**
