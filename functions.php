@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('EPORTFOLIO_VERSION', '2.7.3');
+define('EPORTFOLIO_VERSION', '2.7.4');
 define('EPORTFOLIO_DIR', get_stylesheet_directory());
 define('EPORTFOLIO_URL', get_stylesheet_directory_uri());
 
@@ -243,7 +243,12 @@ function eportfolio_rewrite_post_title_for_show( $block_content, $block, $instan
     }
 
     $post_url = esc_url( get_permalink( $post_id ) );
-    $show_url = esc_url( add_query_arg( 'show', $post_id, $base_url ) );
+    // Carry an active ?content-type= filter along so the sidebar stays filtered.
+    $args = array( 'show' => $post_id );
+    if ( function_exists( 'eportfolio_active_content_type' ) && eportfolio_active_content_type() ) {
+        $args['content-type'] = eportfolio_active_content_type();
+    }
+    $show_url = esc_url( add_query_arg( $args, $base_url ) );
 
     return str_replace( 'href="' . $post_url . '"', 'href="' . $show_url . '"', $block_content );
 }

@@ -32,6 +32,73 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * The active ?content-type= filter slug on an author/portfolio view, or ''
+ * when there is none or the term doesn't exist.
+ */
+function eportfolio_active_content_type() {
+    if ( ! is_author() || empty( $_GET['content-type'] ) ) {
+        return '';
+    }
+    $slug = sanitize_title( wp_unslash( $_GET['content-type'] ) );
+    return term_exists( $slug, 'content-type' ) ? $slug : '';
+}
+
+/**
+ * Apply the active content-type filter to non-inherit Query Loops too.
+ *
+ * preserve_author_on_taxonomy_filter() (functions.php) filters only the MAIN
+ * query. The single-post layout's sidebar (the post list in the <details>
+ * drawer) is its own Query Loop with inherit:false, so without this it keeps
+ * listing every post while the main column shows the filtered one.
+ */
+add_filter( 'query_loop_block_query_vars', 'eportfolio_content_type_block_query', 20, 2 );
+function eportfolio_content_type_block_query( $query, $block ) {
+    if ( ! empty( $block->attributes['query']['inherit'] ) ) {
+        return $query; // main query handles itself
+    }
+    $slug = eportfolio_active_content_type();
+    if ( ! $slug ) {
+        return $query;
+    }
+    $tax_query   = isset( $query['tax_query'] ) && is_array( $query['tax_query'] ) ? $query['tax_query'] : array();
+    $tax_query[] = array(
+        'taxonomy' => 'content-type',
+        'field'    => 'slug',
+        'terms'    => $slug,
+    );
+    $query['tax_query'] = $tax_query;
+    return $query;
+}
+
+/**
+ * Keep the sidebar drawer open while browsing.
+ *
+ * A filter click is a full page load, which re-renders the <details> drawer
+ * closed. When a content-type filter or a ?show= post is active, render any
+ * Details block that contains a Query Loop (the post-list drawer) open.
+ */
+add_filter( 'render_block_core/details', 'eportfolio_open_post_list_details', 10, 2 );
+function eportfolio_open_post_list_details( $block_content, $block ) {
+    if ( ! eportfolio_active_content_type() && empty( $_GET['show'] ) ) {
+        return $block_content;
+    }
+    if ( ! eportfolio_block_contains( $block, 'core/query' ) ) {
+        return $block_content;
+    }
+    return preg_replace( '/<details\b(?![^>]*\bopen\b)/', '<details open', $block_content, 1 );
+}
+
+/** Whether a parsed block has a descendant of the given block type. */
+function eportfolio_block_contains( $block, $name ) {
+    foreach ( $block['innerBlocks'] ?? array() as $inner ) {
+        if ( ( $inner['blockName'] ?? '' ) === $name || eportfolio_block_contains( $inner, $name ) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Content-type slugs the currently-viewed author has actually published in.
  *
  * On /author/ this is any published post; on /portfolio/ it is narrowed to
